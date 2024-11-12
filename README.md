@@ -12,7 +12,15 @@
 - Track and display download progress.
 - Organize and format manga chapters efficiently.
 
-## Project Structure
+## Dependencies
+
+- Python 3
+- `requests` - for HTTP requests
+- `beautifulsoup4` (bs4) - for HTML parsing
+- `Pillow` - for image processing
+- `rich` - for progress display in terminal
+
+## Directory Structure
 
 ```
 project-root/
@@ -26,21 +34,13 @@ project-root/
 └── URLs.txt             # Text file containing manga URLs
 ```
 
-## Requirements
-
-- Python 3
-- `requests` - for HTTP requests
-- `beautifulsoup4` (bs4) - for HTML parsing
-- `Pillow` - for image processing
-- `rich` - for progress display in terminal
-
-## Usage
+## Installation
 
 1. Clone the repository:
 
- ```bash
- git clone https://github.com/Lysagxra/MangaWorldDownloader.git
- ```
+```bash
+git clone https://github.com/Lysagxra/MangaWorldDownloader.git
+```
    
 2. Navigate to the project directory: 
 
@@ -48,39 +48,35 @@ project-root/
 cd MangaWorldDownloader
 ```
 
-3. Install dependencies:
+3. Install the required dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-# Single Manga Download
+## Single Manga Download
 
-To download a single anime, you can use the `manga_downloader.py` script.
+To download a single manga, you can use the `manga_downloader.py` script.
 
-## Usage
+### Usage
 
-Run the script followed by the anime URL you want to download:
+Run the script followed by the manga URL you want to download:
 
 ```bash
 python3 manga_downloader.py <manga_url>
 ```
 
-Example
+### Example
 
 ```bash
 python3 manga_downloader.py https://www.mangaworld.ac/manga/2754/sayonara-eri
 ```
 
-# Batch Download
+## Batch Download
 
-## Usage
+### Usage
 
 1. Create a `URLs.txt` file in the project root and list the manga URLs you want to download.
-
-```bash
-python3 main.py
-```
 
 2. Run the main script via the command line:
 
@@ -94,7 +90,7 @@ The downloaded files will be saved in the `Downloads` directory.
 
 This tool includes a feature to generate PDFs from downloaded manga chapters. You can use the `-p` argument from the command line to enable this functionality.
 
-### Usage:
+### Usage
 
 To generate PDFs for the downloaded manga, run the following command:
 
