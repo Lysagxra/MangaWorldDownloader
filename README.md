@@ -2,6 +2,8 @@
 
 > A Python-based tool for downloading and organizing manga content from MangaWorld.
 
+![Demo](https://github.com/Lysagxra/MangaWorldDownloader/blob/8d3a28187c1b16f541ac6df1f6c82aa0b36e9725/misc/Demo.gif)
+
 ## Features
 
 - Downloads multiple chapters concurrently.
