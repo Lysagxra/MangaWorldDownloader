@@ -1,0 +1,2 @@
+# MangaWorldDownloader
+Downloader for MangaWorld
