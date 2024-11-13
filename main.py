@@ -16,6 +16,7 @@ To run the script, execute it from the command line. The available options are:
    python3 main.py -p
 """
 
+import asyncio
 import argparse
 from manga_downloader import process_manga_download, clear_terminal
 
@@ -47,7 +48,7 @@ def write_file(filename, content=''):
     with open(filename, 'w', encoding='utf-8') as file:
         file.write(content)
 
-def process_urls(urls, generate_pdf_flag=False):
+async def process_urls(urls, generate_pdf_flag=False):
     """
     Validates and downloads items for a list of URLs.
 
@@ -56,7 +57,7 @@ def process_urls(urls, generate_pdf_flag=False):
         generate_pdf_flag (bool): Whether to generate PDFs after downloading.
     """
     for url in urls:
-        process_manga_download(url, generate_pdf_flag=generate_pdf_flag)
+        await process_manga_download(url, generate_pdf_flag=generate_pdf_flag)
 
 def setup_parser():
     """
@@ -78,7 +79,7 @@ def setup_parser():
     )
     return parser
 
-def main():
+async def main():
     """
     Main function to execute the script.
 
@@ -90,8 +91,8 @@ def main():
 
     clear_terminal()
     urls = read_file(FILE)
-    process_urls(urls, generate_pdf_flag=args.pdf)
+    await process_urls(urls, generate_pdf_flag=args.pdf)
     write_file(FILE)
 
 if __name__ == '__main__':
-    main()
+    asyncio.run(main())

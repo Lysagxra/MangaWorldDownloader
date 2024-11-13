@@ -17,8 +17,10 @@ Example:
 import os
 import sys
 import argparse
+import asyncio
 from pathlib import Path
 
+import aiohttp
 import requests
 from bs4 import BeautifulSoup
 from rich.live import Live
@@ -43,74 +45,174 @@ HEADERS = {
     "Connection": "keep-alive",
 }
 
-def extract_chapters_info(soup, match="/read/"):
+async def fetch_chapter_data(chapter_url, session):
     """
-    Extracts the URLs of manga chapters and the number of pages for each
-    chapter.
+    Fetches the number of pages for a given chapter URL.
 
     Args:
-        soup (BeautifulSoup): A BeautifulSoup object representing the HTML of
-                              the manga's main page.
-        match (str, optional): A substring that is used to filter chapter 
-                               URLs. The default is "/read/".
+        chapter_url (str): The URL of the chapter to fetch data from.
+        session (aiohttp.ClientSession): The aiohttp session used for making
+                                         the HTTP request.
 
     Returns:
-        tuple: A tuple containing two lists:
-            - chapter_urls (list of str): A list of URLs for each chapter that
-                                          matches the `match` string.
-            - pages_per_chapter (list of int): A list of integers representing
-                                               the number of pages in each
-                                               chapter.
+        tuple: A tuple containing the chapter URL and the number of
+               pages (str), or (None, None) if an error occurs.
 
     Raises:
-        requests.exceptions.RequestException: If the HTTP request for a chapter 
-                                              fails.
+        aiohttp.ClientError: If there are network-related issues during the
+                             HTTP request.
+        asyncio.TimeoutError: If the HTTP request times out.
     """
-    chapter_urls = []
-    pages_per_chapter = []
+    try:
+        async with session.get(chapter_url, timeout=TIMEOUT) as response:
+            soup = BeautifulSoup(await response.text(), 'html.parser')
+
+            page_item = soup.find('select', {'class': 'page custom-select'})
+            if page_item:
+                option_text = page_item.find('option').get_text()
+                num_pages = option_text.split('/')[-1]
+                return chapter_url, num_pages
+
+            return None, None
+
+    except (aiohttp.ClientError, asyncio.TimeoutError) as err:
+        print(f"Network error while fetching {chapter_url}: {err}")
+
+    return None, None
+
+async def get_chapter_urls_and_pages(soup, session, match="/read/"):
+    """
+    Extracts chapter URLs and the corresponding number of pages from the
+    provided HTML soup.
+
+    Args:
+        soup (BeautifulSoup): The BeautifulSoup object containing the parsed
+                              HTML of the page.
+        session (aiohttp.ClientSession): The aiohttp session used for making
+                                         asynchronous HTTP requests.
+        match (str): A substring to match in chapter URLs
+                     (default is "/read/").
+
+    Returns:
+        tuple: A tuple containing:
+            - List of chapter URLs (str), in reverse order.
+            - List of corresponding page counts (str), in reverse order.
+
+    Raises:
+        asyncio.TimeoutError: If any HTTP request times out.
+        aiohttp.ClientError: If any network-related error occurs during the
+                             HTTP request.
+    """
     chapter_items = soup.find_all('a', {'class': 'chap', 'title': True})
+    tasks = []
 
     for chapter_item in chapter_items:
         chapter_url = chapter_item['href']
         if match in chapter_url:
-            chapter_urls.append(chapter_url)
-
-            response_chapter = SESSION.get(chapter_url, timeout=TIMEOUT)
-            soup_chapter = BeautifulSoup(response_chapter.text, 'html.parser')
-            page_item = soup_chapter.find(
-                'select', {'class': 'page custom-select'}
+            tasks.append(
+                fetch_chapter_data(chapter_url, session)
             )
-            num_pages = page_item.find('option').get_text().split('/')[-1]
-            pages_per_chapter.append(num_pages)
 
+    results = await asyncio.gather(*tasks)
+
+    # Filter out None results (failed requests) and unpack results
+    chapter_urls = []
+    pages_per_chapter = []
+
+    for result in results:
+        if result[0]:
+            chapter_urls.append(result[0])
+            pages_per_chapter.append(result[1])
+
+    # Return chapter URLs and pages, both in reverse order
     return chapter_urls[::-1], pages_per_chapter[::-1]
 
-def extract_download_links(chapter_urls):
+async def extract_chapters_info(soup):
     """
-    Extracts and formats download links for the images in each chapter.
+    Extracts chapter URLs and page numbers.
 
     Args:
-        chapter_urls (list): The sorted list of chapter URLs.
+        soup (BeautifulSoup): The BeautifulSoup object containing the parsed
+                              HTML of the page.
 
     Returns:
-        list: A list of download links for the images.
+        tuple: A tuple containing:
+            - List of chapter URLs (str).
+            - List of corresponding page counts (str).
+
+    Raises:
+        asyncio.TimeoutError: If any HTTP request times out during the process.
+        aiohttp.ClientError: If any network-related error occurs.
+    """
+    async with aiohttp.ClientSession() as session:
+        return await get_chapter_urls_and_pages(soup, session)
+
+async def fetch_download_link(chapter_url, session):
+    """
+    Fetches the download link for the first image in a chapter page.
+
+    Args:
+        chapter_url (str): The URL of the chapter to fetch the download link
+                           from.
+        session (aiohttp.ClientSession): The aiohttp session used for making
+                                         the HTTP request.
+
+    Returns:
+        str or None: The download URL for the image if found, or None if not
+                     found or an error occurs.
+
+    Raises:
+        asyncio.TimeoutError: If the HTTP request times out.
+        aiohttp.ClientError: If a network-related error occurs during the
+                             request.
+    """
+    try:
+        url_to_fetch = chapter_url + "/1"
+        async with session.get(url_to_fetch, timeout=TIMEOUT) as response:
+            soup = BeautifulSoup(await response.text(), 'html.parser')
+
+            img_items = soup.find_all('img', {'class': 'img-fluid'})
+            if img_items:
+                download_link = img_items[-1]['src']
+                return download_link
+
+            return None
+
+    except (aiohttp.ClientError, asyncio.TimeoutError) as err:
+        print(f"Network error while fetching {chapter_url}: {err}")
+
+    return None
+
+async def extract_download_links(chapter_urls):
+    """
+    Extracts the download links for a list of chapter URLs.
+
+    Args:
+        chapter_urls (list): A list of chapter URLs to fetch download links
+                             from.
+
+    Returns:
+        list: A list of cleaned download links, with the "1.png" suffix
+              removed.
+
+    Raises:
+        asyncio.TimeoutError: If any HTTP request times out.
+        aiohttp.ClientError: If a network-related error occurs during the
+                             request.
     """
     download_links = []
+    async with aiohttp.ClientSession() as session:
+        tasks = [
+            fetch_download_link(chapter_url, session)
+            for chapter_url in chapter_urls
+        ]
 
-    for chapter_url in chapter_urls:
-        url_to_fetch = chapter_url + "/1"
+        # Wait for all tasks to complete and filter out None values
+        results = await asyncio.gather(*tasks)
+        download_links = [link for link in results if link]
 
-        response = SESSION.get(url_to_fetch, timeout=TIMEOUT)
-        soup = BeautifulSoup(response.text, 'html.parser')
-
-        for element in soup.find_all('img', {'class': 'img-fluid'}):
-            download_links.append(element['src'])
-
-    return [
-        download_link[:-len("1.png")]
-        for (indx, download_link) in enumerate(download_links)
-        if indx % 2 != 0
-    ]
+    # Remove the "1.png" suffix from each download link
+    return [link[:-len("1.png")] for link in download_links]
 
 def download_page(reqs, page, base_download_link, download_path):
     """
@@ -235,7 +337,7 @@ def process_pdf_generation(manga_name, job_progress):
     manga_parent_folder = os.path.join(DOWNLOAD_FOLDER, manga_name)
     generate_pdf_files(manga_parent_folder, job_progress)
 
-def process_manga_download(url, generate_pdf_flag=False):
+async def process_manga_download(url, generate_pdf_flag=False):
     """
     Process the complete download and PDF generation workflow for a manga,
     given its URL.
@@ -254,9 +356,8 @@ def process_manga_download(url, generate_pdf_flag=False):
 
     try:
         (_, manga_name) = extract_manga_info(url)
-        (chapter_urls, pages_per_chapter) = extract_chapters_info(soup)
-
-        download_links = extract_download_links(chapter_urls)
+        (chapter_urls, pages_per_chapter) = await extract_chapters_info(soup)
+        download_links = await extract_download_links(chapter_urls)
 
         job_progress = create_progress_bar()
         progress_table = create_progress_table(manga_name, job_progress)
@@ -266,7 +367,6 @@ def process_manga_download(url, generate_pdf_flag=False):
                 download_chapter, download_links, job_progress,
                 pages_per_chapter, manga_name
             )
-
             if generate_pdf_flag:
                 process_pdf_generation(manga_name, job_progress)
 
@@ -311,7 +411,7 @@ def setup_parser():
     )
     return parser
 
-def main():
+async def main():
     """
     Main function to initiate the manga download process from a given URL.
 
@@ -323,7 +423,7 @@ def main():
     clear_terminal()
     parser = setup_parser()
     args = parser.parse_args()
-    process_manga_download(args.url, generate_pdf_flag=args.pdf)
+    await process_manga_download(args.url, generate_pdf_flag=args.pdf)
 
 if __name__ == '__main__':
-    main()
+    asyncio.run(main())
