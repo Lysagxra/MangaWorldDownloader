@@ -15,6 +15,7 @@
 ## Dependencies
 
 - Python 3
+- `aiohttp` - for asynchronous HTTP requests
 - `requests` - for HTTP requests
 - `beautifulsoup4` (bs4) - for HTML parsing
 - `Pillow` - for image processing
