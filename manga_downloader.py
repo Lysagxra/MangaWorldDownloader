@@ -15,10 +15,8 @@ Example:
 """
 
 import os
-import sys
 import argparse
 import asyncio
-from pathlib import Path
 
 import aiohttp
 import requests
@@ -27,8 +25,11 @@ from rich.live import Live
 
 from helpers.download_utils import run_in_parallel
 from helpers.format_utils import extract_manga_info
-from helpers.progress_utils import create_progress_bar, create_progress_table
 from helpers.pdf_generator import generate_pdf_files
+from helpers.progress_utils import create_progress_bar, create_progress_table
+from helpers.general_utils import (
+    fetch_page, create_download_directory, clear_terminal
+)
 
 SCRIPT_NAME = os.path.basename(__file__)
 DOWNLOAD_FOLDER = "Downloads"
@@ -139,10 +140,6 @@ async def extract_chapters_info(soup):
         tuple: A tuple containing:
             - List of chapter URLs (str).
             - List of corresponding page counts (str).
-
-    Raises:
-        asyncio.TimeoutError: If any HTTP request times out during the process.
-        aiohttp.ClientError: If any network-related error occurs.
     """
     async with aiohttp.ClientSession() as session:
         return await get_chapter_urls_and_pages(soup, session)
@@ -209,10 +206,14 @@ async def extract_download_links(chapter_urls):
 
         # Wait for all tasks to complete and filter out None values
         results = await asyncio.gather(*tasks)
-        download_links = [link for link in results if link]
 
-    # Remove the "1.png" suffix from each download link
-    return [link[:-len("1.png")] for link in download_links]
+        # Remove the "1.png" suffix from each download link
+        download_links = [
+            download_link[:-len("1.png")]
+            for download_link in results if download_link
+        ]
+
+    return download_links
 
 def download_page(reqs, page, base_download_link, download_path):
     """
@@ -244,27 +245,6 @@ def download_page(reqs, page, base_download_link, download_path):
 
     except requests.exceptions.RequestException as req_err:
         print(f"Error downloading {filename}: {req_err}")
-
-def create_download_directory(manga_name, indx_chapter):
-    """
-    Creates the directory structure for downloading a specific chapter of a
-    manga.
-
-    Args:
-        manga_name (str): The name of the manga. This is used to create the
-                          main folder where all manga chapters will be stored.
-        indx_chapter (int): The index of the chapter being downloaded.
-
-    Returns:
-        str: The full path to the chapter's download folder.
-    """
-    path = Path(os.path.join(DOWNLOAD_FOLDER, manga_name))
-    path.mkdir(parents=True, exist_ok=True)
-
-    subdir_name = os.path.join(manga_name, f"Chapter {indx_chapter + 1}")
-    download_path = os.path.join(DOWNLOAD_FOLDER, subdir_name)
-    os.makedirs(download_path, exist_ok=True)
-    return download_path
 
 def download_chapter(item_info, pages_per_chapter, manga_name, task_info):
     """
@@ -300,28 +280,6 @@ def download_chapter(item_info, pages_per_chapter, manga_name, task_info):
     job_progress.update(task, completed=100, visible=False)
     job_progress.advance(overall_task)
 
-def fetch_manga_page(url):
-    """
-    Fetches the manga page and returns its BeautifulSoup object.
-
-    Args:
-        url (str): The URL of the manga page.
-
-    Returns:
-        BeautifulSoup: The BeautifulSoup object containing the HTML.
-
-    Raises:
-        requests.RequestException: If there is an error with the HTTP request.
-    """
-    try:
-        response = SESSION.get(url, timeout=TIMEOUT)
-        response.raise_for_status()
-        return BeautifulSoup(response.text, 'html.parser')
-
-    except requests.RequestException as req_err:
-        print(f"Error fetching the manga page: {req_err}")
-        sys.exit(1)
-
 def process_pdf_generation(manga_name, job_progress):
     """
     Process the generation of PDF files for a specific manga by traversing its
@@ -352,7 +310,7 @@ async def process_manga_download(url, generate_pdf_flag=False):
                     the URL or fetching chapter details, a `ValueError` is
                     raised.
     """
-    soup = fetch_manga_page(url)
+    soup = fetch_page(url)
 
     try:
         (_, manga_name) = extract_manga_info(url)
@@ -372,19 +330,6 @@ async def process_manga_download(url, generate_pdf_flag=False):
 
     except ValueError as val_err:
         print(f"Value error: {val_err}")
-
-def clear_terminal():
-    """
-    Clears the terminal screen based on the operating system.
-    """
-    commands = {
-        'nt': 'cls',      # Windows
-        'posix': 'clear'  # macOS and Linux
-    }
-
-    command = commands.get(os.name)
-    if command:
-        os.system(command)
 
 def setup_parser():
     """
