@@ -81,6 +81,17 @@ python3 manga_downloader.py https://www.mangaworld.ac/manga/2754/sayonara-eri
 
 1. Create a `URLs.txt` file in the project root and list the manga URLs you want to download.
 
+- Example of `URLs.txt`:
+
+```
+https://www.mangaworld.ac/manga/2754/sayonara-eri
+https://www.mangaworld.ac/manga/2378/bibliomania
+https://www.mangaworld.ac/manga/2472/soloist-of-the-prison
+```
+
+- Ensure that each URL is on its own line without any extra spaces.
+- You can add as many URLs as you need, following the same format.
+
 2. Run the main script via the command line:
 
 ```bash
