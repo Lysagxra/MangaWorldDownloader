@@ -20,21 +20,26 @@ import asyncio
 
 import aiohttp
 import requests
+from PIL import ImageFile
 from bs4 import BeautifulSoup
 from rich.live import Live
 
 from helpers.download_utils import run_in_parallel
 from helpers.format_utils import extract_manga_info
 from helpers.pdf_generator import generate_pdf_files
-from helpers.progress_utils import create_progress_bar, create_progress_table
+from helpers.progress_utils import (
+    create_progress_bar,
+    create_progress_table
+)
 from helpers.general_utils import (
-    check_real_page, fetch_page, create_download_directory, clear_terminal
+    check_real_page,
+    fetch_page,
+    create_download_directory,
+    clear_terminal
 )
 
-from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
-SCRIPT_NAME = os.path.basename(__file__)
 DOWNLOAD_FOLDER = "Downloads"
 
 SESSION = requests.Session()
@@ -169,12 +174,12 @@ async def fetch_download_link(chapter_url, session):
                              request.
     """
     try:
-        url_to_fetch = chapter_url + "/1"
+        url_to_fetch = f"{chapter_url}/1"
         async with session.get(url_to_fetch, timeout=TIMEOUT) as response:
             soup = BeautifulSoup(await response.text(), 'html.parser')
-            soup = await check_real_page(soup, session, TIMEOUT)
+            validated_soup = await check_real_page(soup, session, TIMEOUT)
 
-            img_items = soup.find_all('img', {'class': 'img-fluid'})
+            img_items = validated_soup.find_all('img', {'class': 'img-fluid'})
             if img_items:
                 download_link = img_items[-1]['src']
                 return download_link
@@ -221,18 +226,18 @@ async def extract_download_links(chapter_urls):
 
     return download_links
 
-def download_page(reqs, page, base_download_link, download_path):
+def download_page(response, page, base_download_link, download_path):
     """
     Downloads a single page of a chapter.
 
     Args:
-        reqs (requests.Response): The HTTP response object.
+        response (requests.Response): The HTTP response object.
         page (int): The page number.
         base_download_link (str): The base download link.
         download_path (str): The directory path to save the image.
     """
     extension_mapping = {True: ".png", False: ".jpg"}
-    status_check = reqs.status_code == 200
+    status_check = response.status_code == 200
     filename = str(page) + extension_mapping[status_check]
 
     download_link = base_download_link + filename
@@ -240,7 +245,10 @@ def download_page(reqs, page, base_download_link, download_path):
 
     try:
         response = SESSION.get(
-            download_link, stream=True, headers=HEADERS, timeout=TIMEOUT
+            download_link,
+            stream=True,
+            headers=HEADERS,
+            timeout=TIMEOUT
         )
         response.raise_for_status()
 
@@ -275,13 +283,22 @@ def download_chapter(item_info, pages_per_chapter, manga_name, task_info):
     num_pages = int(pages_per_chapter[indx_chapter])
 
     for page in range(1, num_pages + 1):
-        test_download_link = base_download_link + str(page) + ".png"
-        if os.path.exists(test_download_link) or os.path.exists(os.path.join(download_path, str(page) + ".jpg")):
+        test_download_link = f"{base_download_link}{page}.png"
+
+        if (
+            os.path.exists(test_download_link)
+            or os.path.exists(os.path.join(download_path, f"{page}.jpg"))
+        ):
             continue
-        reqs = SESSION.get(
-            test_download_link, stream=True, headers=HEADERS, timeout=TIMEOUT
+
+        response = SESSION.get(
+            test_download_link,
+            stream=True,
+            headers=HEADERS,
+            timeout=TIMEOUT
         )
-        download_page(reqs, page, base_download_link, download_path)
+
+        download_page(response, page, base_download_link, download_path)
         progress_percentage = (page / num_pages) * 100
         job_progress.update(task, completed=progress_percentage)
 
@@ -303,7 +320,7 @@ def process_pdf_generation(manga_name, job_progress):
     manga_parent_folder = os.path.join(DOWNLOAD_FOLDER, manga_name)
     generate_pdf_files(manga_parent_folder, job_progress)
 
-async def process_manga_download(url, generate_pdf_flag=False):
+async def process_manga_download(url, generate_pdf=False):
     """
     Process the complete download and PDF generation workflow for a manga,
     given its URL.
@@ -311,7 +328,7 @@ async def process_manga_download(url, generate_pdf_flag=False):
     Args:
         url (str): The URL of the manga page. The URL should point to a page
                    that contains information about the manga and its chapters.
-        generate_pdf_flag (bool): If True, generate a PDF after download.
+        generate_pdf (bool): If True, generate a PDF after download.
 
     Raises:
         ValueError: If there is an issue extracting the manga information from
@@ -333,7 +350,7 @@ async def process_manga_download(url, generate_pdf_flag=False):
                 download_chapter, download_links, job_progress,
                 pages_per_chapter, manga_name
             )
-            if generate_pdf_flag:
+            if generate_pdf:
                 process_pdf_generation(manga_name, job_progress)
 
     except ValueError as val_err:
@@ -376,7 +393,7 @@ async def main():
     clear_terminal()
     parser = setup_parser()
     args = parser.parse_args()
-    await process_manga_download(args.url, generate_pdf_flag=args.pdf)
+    await process_manga_download(args.url, generate_pdf=args.pdf)
 
 if __name__ == '__main__':
     asyncio.run(main())
