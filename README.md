@@ -26,14 +26,15 @@
 ```
 project-root/
 ├── helpers/
+│ ├── download_utils.py  # Manages constants and settings used across the project
 │ ├── download_utils.py  # Utilities for managing the download process
 │ ├── file_utils.py      # Utilities for managing file operations
-│ ├── format_utils.py    # Functions for formatting manga data.
+│ ├── format_utils.py    # Functions for formatting manga data
 │ ├── general_utils.py   # Miscellaneous utility functions
-│ ├── pdf_generator.py   # Tools for generating PDF files from manga chapters.
-│ └── progress_utils.py  # Utilities for tracking and displaying progress.
-├── manga_downloader.py  # Core functionality for managing manga downloads.
-├── main.py              # Main script to run the downloader.
+│ ├── pdf_generator.py   # Tools for generating PDF files from manga chapters
+│ └── progress_utils.py  # Utilities for tracking and displaying progress
+├── manga_downloader.py  # Core functionality for managing manga downloads
+├── main.py              # Main script to run the downloader
 └── URLs.txt             # Text file containing manga URLs
 ```
 
