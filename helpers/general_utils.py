@@ -12,77 +12,68 @@ import sys
 from pathlib import Path
 
 import aiohttp
-import requests
 from bs4 import BeautifulSoup
 
 DOWNLOAD_FOLDER = "Downloads"
 
-# def check_real_page(res, session, timeout=10, is_async=False):
-#     if "document.cookie" in res.body.script.text:
-#             print("Found not final page, trying to fetch real one again...")
+async def check_real_page(initial_response, session, timeout=10):
+    """
+    Asynchronously checks if the provided response contains a redirect to a
+    real page and fetches the real page using the extracted cookie and URL.
 
-#             cookie_regex = r'document\.cookie="([^;]+)'
-#             match = re.search(cookie_regex, res.body.script.text)
+    Parameters:
+        initial_response (BeautifulSoup): The response object containing the
+                                          initial page content.
+        session (aiohttp.ClientSession): The session used to make the
+                                         subsequent request.
+        timeout (int, optional): The timeout (in seconds) for the HTTP request.
+                                 Defaults to 10 seconds.
 
-#             if match:
-#                 cookie = match.group(1)  # Extracted cookie value
-#                 print("Extracted Cookie:", cookie)
-#                 cookie = cookie.strip().split("=")
-#             else:
-#                 print("No cookie found")
-#                 return res
-            
-#             # Regex to extract the URL from location.href
-#             link_regex = r'location\.href="([^"]+)"'
-#             match = re.search(link_regex, res.body.script.text)
-
-#             if match:
-#                 link = match.group(1)  # Extracted link
-#                 print("Extracted Link:", link)
-#             else:
-#                 print("No link found")
-#                 return res
-
-#             response = session.get(link, timeout=timeout, cookies={cookie[0]: cookie[1]})
-#             response.raise_for_status()
-#             res =  BeautifulSoup(response.text, 'html.parser')
-
-#     return res
-
-async def check_real_page(res, session, timeout=10):
-    if "document.cookie" in res.body.script.text:
+    Returns:
+        BeautifulSoup: The original or modified response, parsed as a
+                       BeautifulSoup object, if the real page was successfully
+                       fetched, otherwise the original response.
+    """
+    if "document.cookie" in initial_response.body.script.text:
         # print("Found not final page, trying to fetch real one again...")
 
         # Extract the cookie
         cookie_regex = r'document\.cookie="([^;]+)'
-        match = re.search(cookie_regex, res.body.script.text)
+        match = re.search(cookie_regex, initial_response.body.script.text)
 
         if match:
-            cookie = match.group(1)  # Extracted cookie value
+            cookie = match.group(1)
             # print("Extracted Cookie:", cookie)
             cookie = cookie.strip().split("=")
         else:
             # print("No cookie found")
-            return res
+            return initial_response
 
         # Extract the link
         link_regex = r'location\.href="([^"]+)"'
-        match = re.search(link_regex, res.body.script.text)
+        match = re.search(link_regex, initial_response.body.script.text)
 
         if match:
             link = match.group(1)  # Extracted link
             # print("Extracted Link:", link)
         else:
             print("No link found")
-            return res
+            return initial_response
 
         # Perform the request
-        async with session.get(link, timeout=timeout, cookies={cookie[0]: cookie[1]}) as response:
+        async with session.get(
+            link,
+            timeout=timeout,
+            cookies={cookie[0]: cookie[1]}
+        ) as response:
+
             response.raise_for_status()
+            parsed_response = BeautifulSoup(
+                await response.text(),
+                'html.parser'
+            )
 
-            res = BeautifulSoup(await response.text(), 'html.parser')
-
-    return res
+    return parsed_response
 
 async def fetch_page(url, timeout=10):
     """
@@ -104,13 +95,14 @@ async def fetch_page(url, timeout=10):
     """
     # Create a new session per worker
     async with aiohttp.ClientSession() as session:
-
         try:
             async with session.get(url, timeout=timeout) as response:
-                res =  BeautifulSoup(await response.text(), 'html.parser')
-            res = await check_real_page(res, session, timeout)
+                parsed_response =  BeautifulSoup(
+                    await response.text(),
+                    'html.parser'
+                )
 
-            return res
+            return await check_real_page(parsed_response, session, timeout)
 
         except (aiohttp.ClientError, asyncio.TimeoutError) as req_err:
             print(f"Error fetching page {url}: {req_err}")
