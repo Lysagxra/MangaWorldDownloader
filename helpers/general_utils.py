@@ -14,7 +14,7 @@ from pathlib import Path
 import aiohttp
 from bs4 import BeautifulSoup
 
-DOWNLOAD_FOLDER = "Downloads"
+from .config import DOWNLOAD_FOLDER
 
 async def check_real_page(initial_response, session, timeout=10):
     """
