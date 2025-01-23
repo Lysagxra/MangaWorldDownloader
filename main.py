@@ -23,18 +23,18 @@ from helpers.general_utils import clear_terminal
 from helpers.file_utils import read_file, write_file
 from manga_downloader import process_manga_download
 
-FILE = 'URLs.txt'
+FILE = "URLs.txt"
 
-async def process_urls(urls, generate_pdf_flag=False):
+async def process_urls(urls, generate_pdf=False):
     """
     Validates and downloads items for a list of URLs.
 
     Args:
         urls (list): A list of URLs to process.
-        generate_pdf_flag (bool): Whether to generate PDFs after downloading.
+        generate_pdf (bool): Whether to generate PDFs after downloading.
     """
     for url in urls:
-        await process_manga_download(url, generate_pdf_flag=generate_pdf_flag)
+        await process_manga_download(url, generate_pdf=generate_pdf)
 
 def setup_parser():
     """
@@ -68,7 +68,7 @@ async def main():
 
     clear_terminal()
     urls = read_file(FILE)
-    await process_urls(urls, generate_pdf_flag=args.pdf)
+    await process_urls(urls, generate_pdf=args.pdf)
     write_file(FILE)
 
 if __name__ == '__main__':
