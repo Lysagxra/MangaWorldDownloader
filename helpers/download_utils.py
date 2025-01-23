@@ -5,8 +5,10 @@ tracking and concurrent execution.
 
 from concurrent.futures import ThreadPoolExecutor
 
-MAX_WORKERS = 5
-TASK_COLOR = 'cyan'
+from .config import (
+    MAX_WORKERS,
+    TASK_COLOR
+)
 
 def manage_running_tasks(futures, job_progress):
     """
