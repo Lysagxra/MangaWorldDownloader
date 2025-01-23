@@ -21,9 +21,9 @@ import argparse
 
 from helpers.general_utils import clear_terminal
 from helpers.file_utils import read_file, write_file
-from manga_downloader import process_manga_download
+from helpers.config import URLS_FILE
 
-FILE = "URLs.txt"
+from manga_downloader import process_manga_download
 
 async def process_urls(urls, generate_pdf=False):
     """
@@ -67,9 +67,9 @@ async def main():
     args = parser.parse_args()
 
     clear_terminal()
-    urls = read_file(FILE)
+    urls = read_file(URLS_FILE)
     await process_urls(urls, generate_pdf=args.pdf)
-    write_file(FILE)
+    write_file(URLS_FILE)
 
 if __name__ == '__main__':
     asyncio.run(main())
