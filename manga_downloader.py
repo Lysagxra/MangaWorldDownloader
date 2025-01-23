@@ -37,22 +37,15 @@ from helpers.general_utils import (
     create_download_directory,
     clear_terminal
 )
+from helpers.config import (
+    DOWNLOAD_FOLDER,
+    CHUNK_SIZE,
+    TIMEOUT,
+    HEADERS
+)
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
-
-DOWNLOAD_FOLDER = "Downloads"
-
 SESSION = requests.Session()
-CHUNK_SIZE = 16 * 1024
-TIMEOUT = 10
-
-HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) "
-        "Gecko/20100101 Firefox/117.0"
-    ),
-    "Connection": "keep-alive",
-}
 
 async def fetch_chapter_data(chapter_url, session):
     """
