@@ -28,8 +28,11 @@ from helpers.format_utils import extract_manga_info
 from helpers.pdf_generator import generate_pdf_files
 from helpers.progress_utils import create_progress_bar, create_progress_table
 from helpers.general_utils import (
-    fetch_page, create_download_directory, clear_terminal
+    check_real_page, fetch_page, create_download_directory, clear_terminal
 )
+
+from PIL import ImageFile
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 SCRIPT_NAME = os.path.basename(__file__)
 DOWNLOAD_FOLDER = "Downloads"
@@ -67,6 +70,8 @@ async def fetch_chapter_data(chapter_url, session):
     try:
         async with session.get(chapter_url, timeout=TIMEOUT) as response:
             soup = BeautifulSoup(await response.text(), 'html.parser')
+            soup = await check_real_page(soup, session, TIMEOUT)
+
 
             page_item = soup.find('select', {'class': 'page custom-select'})
             if page_item:
@@ -167,6 +172,7 @@ async def fetch_download_link(chapter_url, session):
         url_to_fetch = chapter_url + "/1"
         async with session.get(url_to_fetch, timeout=TIMEOUT) as response:
             soup = BeautifulSoup(await response.text(), 'html.parser')
+            soup = await check_real_page(soup, session, TIMEOUT)
 
             img_items = soup.find_all('img', {'class': 'img-fluid'})
             if img_items:
@@ -270,6 +276,8 @@ def download_chapter(item_info, pages_per_chapter, manga_name, task_info):
 
     for page in range(1, num_pages + 1):
         test_download_link = base_download_link + str(page) + ".png"
+        if os.path.exists(test_download_link) or os.path.exists(os.path.join(download_path, str(page) + ".jpg")):
+            continue
         reqs = SESSION.get(
             test_download_link, stream=True, headers=HEADERS, timeout=TIMEOUT
         )
@@ -310,7 +318,7 @@ async def process_manga_download(url, generate_pdf_flag=False):
                     the URL or fetching chapter details, a `ValueError` is
                     raised.
     """
-    soup = fetch_page(url)
+    soup = await fetch_page(url)
 
     try:
         (_, manga_name) = extract_manga_info(url)

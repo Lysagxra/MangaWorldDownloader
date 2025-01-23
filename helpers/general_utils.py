@@ -5,16 +5,86 @@ such as sending HTTP requests, parsing HTML, creating download directories, and
 clearing the terminal, making it reusable across projects.
 """
 
+import asyncio
 import os
+import re
 import sys
 from pathlib import Path
 
+import aiohttp
 import requests
 from bs4 import BeautifulSoup
 
 DOWNLOAD_FOLDER = "Downloads"
 
-def fetch_page(url, timeout=10):
+# def check_real_page(res, session, timeout=10, is_async=False):
+#     if "document.cookie" in res.body.script.text:
+#             print("Found not final page, trying to fetch real one again...")
+
+#             cookie_regex = r'document\.cookie="([^;]+)'
+#             match = re.search(cookie_regex, res.body.script.text)
+
+#             if match:
+#                 cookie = match.group(1)  # Extracted cookie value
+#                 print("Extracted Cookie:", cookie)
+#                 cookie = cookie.strip().split("=")
+#             else:
+#                 print("No cookie found")
+#                 return res
+            
+#             # Regex to extract the URL from location.href
+#             link_regex = r'location\.href="([^"]+)"'
+#             match = re.search(link_regex, res.body.script.text)
+
+#             if match:
+#                 link = match.group(1)  # Extracted link
+#                 print("Extracted Link:", link)
+#             else:
+#                 print("No link found")
+#                 return res
+
+#             response = session.get(link, timeout=timeout, cookies={cookie[0]: cookie[1]})
+#             response.raise_for_status()
+#             res =  BeautifulSoup(response.text, 'html.parser')
+
+#     return res
+
+async def check_real_page(res, session, timeout=10):
+    if "document.cookie" in res.body.script.text:
+        # print("Found not final page, trying to fetch real one again...")
+
+        # Extract the cookie
+        cookie_regex = r'document\.cookie="([^;]+)'
+        match = re.search(cookie_regex, res.body.script.text)
+
+        if match:
+            cookie = match.group(1)  # Extracted cookie value
+            # print("Extracted Cookie:", cookie)
+            cookie = cookie.strip().split("=")
+        else:
+            # print("No cookie found")
+            return res
+
+        # Extract the link
+        link_regex = r'location\.href="([^"]+)"'
+        match = re.search(link_regex, res.body.script.text)
+
+        if match:
+            link = match.group(1)  # Extracted link
+            # print("Extracted Link:", link)
+        else:
+            print("No link found")
+            return res
+
+        # Perform the request
+        async with session.get(link, timeout=timeout, cookies={cookie[0]: cookie[1]}) as response:
+            response.raise_for_status()
+
+            res = BeautifulSoup(await response.text(), 'html.parser')
+
+    return res
+
+async def fetch_page(url, timeout=10):
     """
     Fetches the HTML content of a webpage and parses it into a BeautifulSoup
     object.
@@ -33,16 +103,18 @@ def fetch_page(url, timeout=10):
                     exits after printing the error message.
     """
     # Create a new session per worker
-    session = requests.Session()
+    async with aiohttp.ClientSession() as session:
 
-    try:
-        response = session.get(url, timeout=timeout)
-        response.raise_for_status()
-        return BeautifulSoup(response.text, 'html.parser')
+        try:
+            async with session.get(url, timeout=timeout) as response:
+                res =  BeautifulSoup(await response.text(), 'html.parser')
+            res = await check_real_page(res, session, timeout)
 
-    except requests.RequestException as req_err:
-        print(f"Error fetching page {url}: {req_err}")
-        sys.exit(1)
+            return res
+
+        except (aiohttp.ClientError, asyncio.TimeoutError) as req_err:
+            print(f"Error fetching page {url}: {req_err}")
+            sys.exit(1)
 
 def create_download_directory(manga_name, indx_chapter):
     """
