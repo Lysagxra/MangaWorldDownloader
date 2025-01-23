@@ -9,7 +9,7 @@ import os
 from PIL import Image
 from rich.progress import Progress
 
-DOWNLOAD_FOLDER = "Downloads"
+from .config import DOWNLOAD_FOLDER
 #FOLDER_CONTENT = list(os.walk(DOWNLOAD_FOLDER))
 #NUM_TASKS = len(FOLDER_CONTENT) - len(FOLDER_CONTENT[0][1]) - 1
 
