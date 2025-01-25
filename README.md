@@ -7,8 +7,8 @@
 ## Features
 
 - Downloads multiple chapters concurrently.
-- Supports batch downloading via a list of URLs.
-- Convert downloaded chapters into PDFs.
+- Supports [batch downloading](https://github.com/Lysagxra/MangaWorldDownloader?tab=readme-ov-file#batch-download) via a list of URLs.
+- Supports the [generation of PDF files](https://github.com/Lysagxra/MangaWorldDownloader?tab=readme-ov-file#pdf-generation) from the downloaded chapters.
 - Track and display download progress.
 - Organize and format manga chapters efficiently.
 
