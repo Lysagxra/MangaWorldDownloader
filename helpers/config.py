@@ -12,7 +12,11 @@ URLS_FILE = "URLs.txt"         # The name of the file containing the list of
 MAX_WORKERS = 5         # Maximum number of concurrent workers.
 TASK_COLOR = "cyan"     # Color used for task-related output in the terminal.
 CHUNK_SIZE = 16 * 1024  # Size of data chunks (bytes) to be processed at a time.
-TIMEOUT = 10            # Timeout value (in seconds) for HTTP requests.
+TIMEOUT = 20            # Timeout value (in seconds) for HTTP requests.
+MAX_RETRIES = 30         # Maximum number of retries for failed HTTP requests.
+SECONDS = 10            # Number of seconds to wait between retries.
+MAX_RETRIES_PAGE = 5    # Maximum number of retries for failed page requests.
+SECONDS_PAGE = 5        # Number of seconds to wait between page retries.
 
 # Headers used for general HTTP requests, mimicking a browser user agent.
 HEADERS = {

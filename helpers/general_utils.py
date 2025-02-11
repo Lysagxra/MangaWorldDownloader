@@ -34,19 +34,19 @@ async def check_real_page(initial_response, session, timeout=10):
                        BeautifulSoup object, if the real page was successfully
                        fetched, otherwise the original response.
     """
-    if "document.cookie" in initial_response.body.script.text:
-        # print("Found not final page, trying to fetch real one again...")
-
+    parsed_response = initial_response
+    if initial_response.body and initial_response.body.script and "document.cookie" in initial_response.body.script.text:
+        print("Found not final page, trying to fetch real one again...")
         # Extract the cookie
         cookie_regex = r'document\.cookie="([^;]+)'
         match = re.search(cookie_regex, initial_response.body.script.text)
 
         if match:
             cookie = match.group(1)
-            # print("Extracted Cookie:", cookie)
+            print("Extracted Cookie:", cookie)
             cookie = cookie.strip().split("=")
         else:
-            # print("No cookie found")
+            print("No cookie found")
             return initial_response
 
         # Extract the link
@@ -55,7 +55,7 @@ async def check_real_page(initial_response, session, timeout=10):
 
         if match:
             link = match.group(1)  # Extracted link
-            # print("Extracted Link:", link)
+            print("Extracted Link:", link)
         else:
             print("No link found")
             return initial_response
