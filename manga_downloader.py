@@ -18,7 +18,6 @@ import os
 import argparse
 import asyncio
 import random
-import time
 
 import aiohttp
 import requests
@@ -224,7 +223,7 @@ async def extract_download_links(chapter_urls):
         # Remove the "1.png" suffix from each download link
         download_links = [
             download_link[:-len("1.png")]
-            for download_link in results #if download_link
+            for download_link in results if download_link
         ]
 
     return download_links

@@ -43,10 +43,10 @@ async def check_real_page(initial_response, session, timeout=10):
 
         if match:
             cookie = match.group(1)
-            print("Extracted Cookie:", cookie)
+            #print("Extracted Cookie:", cookie)
             cookie = cookie.strip().split("=")
         else:
-            print("No cookie found")
+            #print("No cookie found")
             return initial_response
 
         # Extract the link
@@ -55,7 +55,7 @@ async def check_real_page(initial_response, session, timeout=10):
 
         if match:
             link = match.group(1)  # Extracted link
-            print("Extracted Link:", link)
+            #print("Extracted Link:", link)
         else:
             print("No link found")
             return initial_response
