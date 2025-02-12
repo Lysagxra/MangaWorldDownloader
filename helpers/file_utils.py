@@ -17,7 +17,7 @@ def read_file(filename):
     with open(filename, 'r', encoding='utf-8') as file:
         return file.read().splitlines()
 
-def write_file(filename, content=''):
+def write_file(filename, mode='w', content=''):
     """
     Writes content to a specified file. If content is not provided, the file is
     cleared.
@@ -27,5 +27,5 @@ def write_file(filename, content=''):
         content (str, optional): The content to write to the file. Defaults to
                                  an empty string, which clears the file.
     """
-    with open(filename, 'w', encoding='utf-8') as file:
+    with open(filename, mode, encoding='utf-8') as file:
         file.write(content)
