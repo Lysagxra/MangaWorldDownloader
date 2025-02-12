@@ -27,6 +27,7 @@ from rich.live import Live
 
 from helpers.download_utils import run_in_parallel
 from helpers.format_utils import extract_manga_info
+from helpers.file_utils import write_file
 from helpers.pdf_generator import generate_pdf_files
 from helpers.progress_utils import (
     create_progress_bar,
@@ -40,6 +41,7 @@ from helpers.general_utils import (
 )
 from helpers.config import (
     DOWNLOAD_FOLDER,
+    ERROR_LOG,
     CHUNK_SIZE,
     TIMEOUT,
     HEADERS,
@@ -77,18 +79,19 @@ async def fetch_chapter_data(chapter_url, session):
                     num_pages = option_text.split('/')[-1]
                     return chapter_url, num_pages  # Page count found
 
-                print(f"[Retry {attempt+1}/{MAX_RETRIES}] Page count not found for {chapter_url}")
-        
+#                print(f"[Retry {attempt+1}/{MAX_RETRIES}] Page count not found for {chapter_url}")
+
         except (aiohttp.ClientError, asyncio.TimeoutError) as err:
-            print(f"[Retry {attempt+1}/{MAX_RETRIES}] Network error fetching {chapter_url}: {err}")
+#            print(f"[Retry {attempt+1}/{MAX_RETRIES}] Network error fetching {chapter_url}: {err}")
+            pass
 
         attempt += 1
         if attempt < MAX_RETRIES:
-            await asyncio.sleep(1 + random.uniform(0, SECONDS-1))  # Random wait between 1 and SECOND seconds
+            # Random wait between 1 and SECOND seconds
+            await asyncio.sleep(1 + random.uniform(0, SECONDS-1))
 
     print(f"Failed to fetch chapter data for {chapter_url} after {MAX_RETRIES} attempts.")
     return None, None
-
 
 async def get_chapter_urls_and_pages(soup, session, match="/read/"):
     """
@@ -154,8 +157,6 @@ async def extract_chapters_info(soup):
         chapter_urls, pages_per_chapter = await get_chapter_urls_and_pages(soup, session)
         return chapter_urls, pages_per_chapter
 
-
-
 async def fetch_download_link(chapter_url, session):
     """
     Fetches the download link for the first image in a chapter page,
@@ -167,7 +168,8 @@ async def fetch_download_link(chapter_url, session):
                                          the HTTP request.
 
     Returns:
-        str or None: The download URL for the image if found, or None if all attempts fail.
+        str or None: The download URL for the image if found, or None if all
+                     attempts fail.
     """
     attempt = 0
     while attempt < MAX_RETRIES:
@@ -181,15 +183,17 @@ async def fetch_download_link(chapter_url, session):
                 if img_items:
                     return img_items[-1]['src']  # Download link found
 
-                print(f"[Retry {attempt+1}/{MAX_RETRIES}] Download link not found for {chapter_url}")
-        
+#                print(f"[Retry {attempt+1}/{MAX_RETRIES}] Download link not found for {chapter_url}")
+
         except (aiohttp.ClientError, asyncio.TimeoutError) as err:
-            print(f"[Retry {attempt+1}/{MAX_RETRIES}] Network error fetching {chapter_url}: {err}")
+#            print(f"[Retry {attempt+1}/{MAX_RETRIES}] Network error fetching {chapter_url}: {err}")
+            pass
 
         attempt += 1
         if attempt < MAX_RETRIES:
-            await asyncio.sleep(1 + random.uniform(0, SECONDS))  # Random wait between 1 and 5 seconds
-    
+            # Random wait between 1 and 5 seconds
+            await asyncio.sleep(1 + random.uniform(0, SECONDS))
+
     print(f"Failed to fetch download link for {chapter_url} after {MAX_RETRIES} attempts.")
     return None
 
@@ -228,7 +232,6 @@ async def extract_download_links(chapter_urls):
 
     return download_links
 
-
 def download_page(response, page, base_download_link, download_path):
     """
     Downloads a single page of a chapter.
@@ -262,8 +265,13 @@ def download_page(response, page, base_download_link, download_path):
 
     except requests.exceptions.RequestException as req_err:
         print(f"Error downloading {filename}: {req_err}")
-        with open("error_log.txt", "a") as log_file:
-            log_file.write(f"Error downloading {filename} from {download_link} : {req_err}\n")
+        write_file(
+            ERROR_LOG,
+            mode="a",
+            content=f"Error downloading {filename} from {download_link}: {req_err}"
+        )
+#        with open(ERROR_LOG, "a") as log_file:
+#            log_file.write(f"Error downloading {filename} from {download_link} : {req_err}\n")
 
 def download_chapter(item_info, pages_per_chapter, manga_name, task_info):
     """
