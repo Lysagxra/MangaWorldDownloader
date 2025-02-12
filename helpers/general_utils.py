@@ -35,8 +35,12 @@ async def check_real_page(initial_response, session, timeout=10):
                        fetched, otherwise the original response.
     """
     parsed_response = initial_response
-    if initial_response.body and initial_response.body.script and "document.cookie" in initial_response.body.script.text:
-        print("Found not final page, trying to fetch real one again...")
+    if (
+        initial_response.body
+        and initial_response.body.script
+        and "document.cookie" in initial_response.body.script.text
+    ):
+#        print("Found not final page, trying to fetch real one again...")
         # Extract the cookie
         cookie_regex = r'document\.cookie="([^;]+)'
         match = re.search(cookie_regex, initial_response.body.script.text)
@@ -57,7 +61,7 @@ async def check_real_page(initial_response, session, timeout=10):
             link = match.group(1)  # Extracted link
             #print("Extracted Link:", link)
         else:
-            print("No link found")
+#            print("No link found")
             return initial_response
 
         # Perform the request
