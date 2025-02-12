@@ -17,6 +17,7 @@ Example:
 import os
 import argparse
 import asyncio
+import random
 
 import aiohttp
 import requests
@@ -41,15 +42,18 @@ from helpers.config import (
     DOWNLOAD_FOLDER,
     CHUNK_SIZE,
     TIMEOUT,
-    HEADERS
+    HEADERS,
+    MAX_RETRIES,
+    SECONDS
 )
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 SESSION = requests.Session()
 
+
 async def fetch_chapter_data(chapter_url, session):
     """
-    Fetches the number of pages for a given chapter URL.
+    Fetches the number of pages for a given chapter URL, retrying if necessary.
 
     Args:
         chapter_url (str): The URL of the chapter to fetch data from.
@@ -58,31 +62,33 @@ async def fetch_chapter_data(chapter_url, session):
 
     Returns:
         tuple: A tuple containing the chapter URL and the number of
-               pages (str), or (None, None) if an error occurs.
-
-    Raises:
-        aiohttp.ClientError: If there are network-related issues during the
-                             HTTP request.
-        asyncio.TimeoutError: If the HTTP request times out.
+               pages (str), or (None, None) if all attempts fail.
     """
-    try:
-        async with session.get(chapter_url, timeout=TIMEOUT) as response:
-            soup = BeautifulSoup(await response.text(), 'html.parser')
-            soup = await check_real_page(soup, session, TIMEOUT)
+    attempt = 0
+    while attempt < MAX_RETRIES:
+        try:
+            async with session.get(chapter_url, timeout=TIMEOUT) as response:
+                soup = BeautifulSoup(await response.text(), 'html.parser')
+                soup = await check_real_page(soup, session, TIMEOUT)
 
+                page_item = soup.find('select', {'class': 'page custom-select'})
+                if page_item:
+                    option_text = page_item.find('option').get_text()
+                    num_pages = option_text.split('/')[-1]
+                    return chapter_url, num_pages  # Page count found
 
-            page_item = soup.find('select', {'class': 'page custom-select'})
-            if page_item:
-                option_text = page_item.find('option').get_text()
-                num_pages = option_text.split('/')[-1]
-                return chapter_url, num_pages
+                print(f"[Retry {attempt+1}/{MAX_RETRIES}] Page count not found for {chapter_url}")
+        
+        except (aiohttp.ClientError, asyncio.TimeoutError) as err:
+            print(f"[Retry {attempt+1}/{MAX_RETRIES}] Network error fetching {chapter_url}: {err}")
 
-            return None, None
+        attempt += 1
+        if attempt < MAX_RETRIES:
+            await asyncio.sleep(1 + random.uniform(0, SECONDS-1))  # Random wait between 1 and SECOND seconds
 
-    except (aiohttp.ClientError, asyncio.TimeoutError) as err:
-        print(f"Network error while fetching {chapter_url}: {err}")
-
+    print(f"Failed to fetch chapter data for {chapter_url} after {MAX_RETRIES} attempts.")
     return None, None
+
 
 async def get_chapter_urls_and_pages(soup, session, match="/read/"):
     """
@@ -145,43 +151,46 @@ async def extract_chapters_info(soup):
             - List of corresponding page counts (str).
     """
     async with aiohttp.ClientSession() as session:
-        return await get_chapter_urls_and_pages(soup, session)
+        chapter_urls, pages_per_chapter = await get_chapter_urls_and_pages(soup, session)
+        return chapter_urls, pages_per_chapter
+
+
 
 async def fetch_download_link(chapter_url, session):
     """
-    Fetches the download link for the first image in a chapter page.
+    Fetches the download link for the first image in a chapter page,
+    retrying multiple times if necessary.
 
     Args:
-        chapter_url (str): The URL of the chapter to fetch the download link
-                           from.
+        chapter_url (str): The URL of the chapter to fetch the download link from.
         session (aiohttp.ClientSession): The aiohttp session used for making
                                          the HTTP request.
 
     Returns:
-        str or None: The download URL for the image if found, or None if not
-                     found or an error occurs.
-
-    Raises:
-        asyncio.TimeoutError: If the HTTP request times out.
-        aiohttp.ClientError: If a network-related error occurs during the
-                             request.
+        str or None: The download URL for the image if found, or None if all attempts fail.
     """
-    try:
-        url_to_fetch = f"{chapter_url}/1"
-        async with session.get(url_to_fetch, timeout=TIMEOUT) as response:
-            soup = BeautifulSoup(await response.text(), 'html.parser')
-            validated_soup = await check_real_page(soup, session, TIMEOUT)
+    attempt = 0
+    while attempt < MAX_RETRIES:
+        try:
+            url_to_fetch = f"{chapter_url}/1"
+            async with session.get(url_to_fetch, timeout=TIMEOUT) as response:
+                soup = BeautifulSoup(await response.text(), 'html.parser')
+                validated_soup = await check_real_page(soup, session, TIMEOUT)
 
-            img_items = validated_soup.find_all('img', {'class': 'img-fluid'})
-            if img_items:
-                download_link = img_items[-1]['src']
-                return download_link
+                img_items = validated_soup.find_all('img', {'class': 'img-fluid'})
+                if img_items:
+                    return img_items[-1]['src']  # Download link found
 
-            return None
+                print(f"[Retry {attempt+1}/{MAX_RETRIES}] Download link not found for {chapter_url}")
+        
+        except (aiohttp.ClientError, asyncio.TimeoutError) as err:
+            print(f"[Retry {attempt+1}/{MAX_RETRIES}] Network error fetching {chapter_url}: {err}")
 
-    except (aiohttp.ClientError, asyncio.TimeoutError) as err:
-        print(f"Network error while fetching {chapter_url}: {err}")
-
+        attempt += 1
+        if attempt < MAX_RETRIES:
+            await asyncio.sleep(1 + random.uniform(0, SECONDS))  # Random wait between 1 and 5 seconds
+    
+    print(f"Failed to fetch download link for {chapter_url} after {MAX_RETRIES} attempts.")
     return None
 
 async def extract_download_links(chapter_urls):
@@ -219,6 +228,7 @@ async def extract_download_links(chapter_urls):
 
     return download_links
 
+
 def download_page(response, page, base_download_link, download_path):
     """
     Downloads a single page of a chapter.
@@ -252,6 +262,8 @@ def download_page(response, page, base_download_link, download_path):
 
     except requests.exceptions.RequestException as req_err:
         print(f"Error downloading {filename}: {req_err}")
+        with open("error_log.txt", "a") as log_file:
+            log_file.write(f"Error downloading {filename} from {download_link} : {req_err}\n")
 
 def download_chapter(item_info, pages_per_chapter, manga_name, task_info):
     """

@@ -49,16 +49,23 @@ def convert2pdf(main_path, output_path, pdf_name):
         key=lambda filename: int(''.join(filter(str.isdigit, filename)))
     )
 
+    if not filenames:
+        print(f"No images found in {main_path}.")
+        return
+
     path_to_pdf = os.path.join(os.getcwd(), output_path, f"{pdf_name}.pdf")
     pics = [
         Image.open(os.path.join(main_path, filename))
         for filename in filenames
     ]
 
-    pics[0].save(
-        path_to_pdf, "PDF", resolution=100.0, save_all=True,
-        append_images=pics[1:]
-    )
+    if pics:
+        pics[0].save(
+            path_to_pdf, "PDF", resolution=100.0, save_all=True,
+            append_images=pics[1:]
+        )
+    else:
+        print(f"No valid images to convert in {main_path}.")
 
 def get_num_folders(current_directory):
     """
