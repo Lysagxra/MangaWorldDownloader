@@ -1,32 +1,20 @@
-"""
-This module provides functionality to convert image files within directories to
-PDF files. It processes directories recursively and generates PDFs for each
-directory's images.
+"""Module that provides functionality to convert image files to PDF files.
+
+It processes directories recursively and generates PDFs for each directory's images.
 """
 
+import logging
 import os
+from pathlib import Path
 
 from PIL import Image
 from rich.progress import Progress
 
 from .config import DOWNLOAD_FOLDER
-#FOLDER_CONTENT = list(os.walk(DOWNLOAD_FOLDER))
-#NUM_TASKS = len(FOLDER_CONTENT) - len(FOLDER_CONTENT[0][1]) - 1
 
-def count_subsubfolders(main_folder):
-    """
-    Count the total number of subsubfolders (i.e., directories inside
-    second-level subfolders) in a given main folder.
 
-    Args:
-        main_folder (str): The path to the main folder (root directory) where
-                           the subfolders and their subsubfolders will be
-                           counted.
-
-    Returns:
-        int: The total number of subsubfolders in all direct subfolders of the
-             `main_folder`.
-    """
+def count_subsubfolders(main_folder: str) -> int:
+    """Count the total number of subsubfolders in a given main folder."""
     total_subsubfolders = 0
     for root, dirs, _ in os.walk(main_folder):
         if root.count(os.sep) == main_folder.count(os.sep) + 1:
@@ -34,73 +22,53 @@ def count_subsubfolders(main_folder):
 
     return total_subsubfolders
 
-def convert2pdf(main_path, output_path, pdf_name):
-    """
-    Convert all image files in the specified directory to a single PDF file.
 
-    Args:
-        main_path (str): The path to the directory containing the image files
-                         to be converted into a PDF.
-        output_path (str): The path where the resulting PDF file will be saved.
-        pdf_name (str): The name of the resulting PDF file (without extension).
-    """
+def convert2pdf(main_path: str, output_path: str, pdf_name: str) -> None:
+    """Convert all image files in the specified directory to a single PDF file."""
     filenames = next(os.walk(main_path), (None, None, []))[2]
-    filenames.sort(
-        key=lambda filename: int(''.join(filter(str.isdigit, filename)))
-    )
+    filenames.sort(key=lambda filename: int("".join(filter(str.isdigit, filename))))
 
     if not filenames:
-        print(f"No images found in {main_path}.")
+        message = f"No images found in {main_path}."
+        logging.error(message)
         return
 
-    path_to_pdf = os.path.join(os.getcwd(), output_path, f"{pdf_name}.pdf")
-    pics = [
-        Image.open(os.path.join(main_path, filename))
-        for filename in filenames
-    ]
+    path_to_pdf = Path.cwd() / Path(output_path) / f"{pdf_name}.pdf"
+    pics = [Image.open(Path(main_path) / filename) for filename in filenames]
 
     if pics:
         pics[0].save(
-            path_to_pdf, "PDF", resolution=100.0, save_all=True,
-            append_images=pics[1:]
+            path_to_pdf,
+            "PDF",
+            resolution=100.0,
+            save_all=True,
+            append_images=pics[1:],
         )
     else:
-        print(f"No valid images to convert in {main_path}.")
+        message = f"No valid images to convert in {main_path}."
+        logging.error(message)
 
-def get_num_folders(current_directory):
-    """
-    Count the number of directories in the specified directory.
 
-    Args:
-        current_directory (str): The path to the directory where folders
-                                 should be counted.
-
-    Returns:
-        int: The number of directories within the specified directory.
-    """
+def get_num_folders(current_directory: str) -> int:
+    """Count the number of directories in the specified directory."""
     return sum(1 for entry in os.scandir(current_directory) if entry.is_dir())
 
-def generate_pdf_files(parent_folder, job_progress, is_module=False):
-    """
-    Generate PDF files from images in each subfolder of the parent folder.
 
-    Args:
-        parent_folder (str): The path to the parent directory containing
-                             subdirectories with images to be converted
-                             into PDFs.
-        job_progress (Progress): The progress tracker object to show task
-                                 progress.
-        is_module (bool): If `True`, the number of folders to process will be
-                          set to `NUM_TASKS`. If `False`, the function will
-                          count the folders in `parent_folder`.
-    """
+def generate_pdf_files(
+    parent_folder: str,
+    job_progress: Progress,
+    *,
+    is_module: bool = False,
+) -> None:
+    """Generate PDF files from images in each subfolder of the parent folder."""
     num_folders = (
-        count_subsubfolders(DOWNLOAD_FOLDER) if is_module
+        count_subsubfolders(DOWNLOAD_FOLDER)
+        if is_module
         else get_num_folders(parent_folder)
     )
     task = job_progress.add_task("[cyan]Generating PDFs", total=num_folders)
 
-    for (path, _, _) in os.walk(parent_folder):
+    for path, _, _ in os.walk(parent_folder):
         manga_name = os.path.basename(os.path.dirname(path))
 
         if manga_name != DOWNLOAD_FOLDER:
@@ -109,12 +77,12 @@ def generate_pdf_files(parent_folder, job_progress, is_module=False):
             convert2pdf(path, pdf_path, filename)
             job_progress.advance(task)
 
-def main():
-    """
-    Entry point for generating PDFs from images in a specific folder.
-    """
+
+def main() -> None:
+    """Generate PDFs from images in a specific folder."""
     with Progress() as job_progress:
         generate_pdf_files(f"{DOWNLOAD_FOLDER}/", job_progress, is_module=True)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

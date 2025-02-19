@@ -1,58 +1,41 @@
-"""
-This module provides utility functions for tracking download progress
-using the Rich library. It includes features for creating a progress bar
-and a formatted progress table specifically designed for monitoring
-the download status of the current taks.
+"""Utility functions for tracking download progress using the Rich library.
+
+It includes features for creating a progress bar and a formatted progress table
+specifically designed for monitoring the download status of the current taks.
 """
 
 from rich.panel import Panel
-from rich.table import Table
 from rich.progress import (
+    BarColumn,
     Progress,
     SpinnerColumn,
-    BarColumn,
     TextColumn,
-    TimeRemainingColumn
+    TimeRemainingColumn,
 )
+from rich.table import Table
 
-def create_progress_bar():
-    """
-    Creates and returns a progress bar for tracking download progress.
 
-    Returns:
-        Progress: A Progress object configured with relevant columns.
-    """
+def create_progress_bar() -> Progress:
+    """Create a progress bar for tracking download progress."""
     return Progress(
         "{task.description}",
         SpinnerColumn(),
         BarColumn(),
         TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
         "•",
-        TimeRemainingColumn()
+        TimeRemainingColumn(),
     )
 
-def create_progress_table(title, job_progress):
-    """
-    Creates a formatted progress table for tracking the download status of
-    the current taks.
 
-    Parameters:
-        title (str): The name of the task for which the progress is being
-                     displayed.
-        job_progress (Progress): An instance of a progress tracking object that
-                                 manages the download progress of the task.
-
-    Returns:
-        Table: A Rich Table object containing a formatted panel with the
-               progress bar, ready to be displayed in a terminal or console.
-    """
+def create_progress_table(title: str, job_progress: Progress) -> Table:
+    """Create a formatted progress table for tracking the download status."""
     progress_table = Table.grid()
     progress_table.add_row(
         Panel.fit(
             job_progress,
             title=f"[b]{title}",
             border_style="red",
-            padding=(1, 1)
-        )
+            padding=(1, 1),
+        ),
     )
     return progress_table
