@@ -4,13 +4,12 @@ These configurations aim to improve modularity and readability by consolidating 
 into a single location.
 """
 
-DOWNLOAD_FOLDER = "Downloads"  # The folder where downloaded files will be
-                               # stored.
-URLS_FILE = "URLs.txt"         # The name of the file containing the list of
-                               # URLs to process.
+DOWNLOAD_FOLDER = "Downloads"  # The folder where downloaded files will be stored.
+URLS_FILE = "URLs.txt"         # The name of the file containing the list of URLs to
+                               # process.
 ERROR_LOG = "error_log.txt"    # The file used to log errors.
 
-MAX_WORKERS = 5         # Maximum number of concurrent workers.
+MAX_WORKERS = 4         # Maximum number of concurrent workers.
 TASK_COLOR = "cyan"     # Color used for task-related output in the terminal.
 CHUNK_SIZE = 16 * 1024  # Size of data chunks (bytes) to be processed at a time.
 TIMEOUT = 20            # Timeout value (seconds) for HTTP requests.

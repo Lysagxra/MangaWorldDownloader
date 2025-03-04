@@ -69,11 +69,11 @@ def generate_pdf_files(
     task = job_progress.add_task("[cyan]Generating PDFs", total=num_folders)
 
     for path, _, _ in os.walk(parent_folder):
-        manga_name = os.path.basename(os.path.dirname(path))
+        manga_name = Path(path).parent.name
 
         if manga_name != DOWNLOAD_FOLDER:
-            filename = os.path.basename(path)
-            pdf_path = os.path.dirname(path)
+            filename = Path(path).name
+            pdf_path = Path(path).parent
             convert2pdf(path, pdf_path, filename)
             job_progress.advance(task)
 

@@ -16,8 +16,7 @@ def read_file(filename: str) -> list[str]:
 def write_file(filename: str, mode: str = "w", content: str = "") -> None:
     """Write content to a specified file.
 
-    If content is not provided, the file is
-    cleared.
+    If content is not provided, the file is cleared.
     """
     with Path(filename).open(mode, encoding="utf-8") as file:
-        file.write(content)
+        file.write(f"{content}\n")

@@ -15,9 +15,17 @@ def extract_manga_info(url: str) -> tuple:
     """Extract manga ID and manga name from a given URL."""
     parsed_url = urlparse(url)
 
+    # Check if the URL path contains the expected structure
+    path_parts = parsed_url.path.strip("/").split("/")
+
+    if len(path_parts) < 3 or path_parts[0] != "manga":
+        logging.error("Invalid URL format: Expected '/manga/{id}/{name}'")
+        return None
+
+    manga_id = path_parts[1]
+    manga_name = path_parts[2]
+
     try:
-        manga_id = parsed_url.path.split("/")[-2]
-        manga_name = parsed_url.path.split("/")[-1]
         formatted_manga_name = re.sub(
             r"(^|\s)(\S)",
             conv2uppercase,

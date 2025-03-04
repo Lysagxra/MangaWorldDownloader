@@ -4,10 +4,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 from rich.progress import Progress
 
-from .config import (
-    MAX_WORKERS,
-    TASK_COLOR,
-)
+from .config import MAX_WORKERS, TASK_COLOR
 
 
 def manage_running_tasks(futures: dict, job_progress: Progress) -> None:

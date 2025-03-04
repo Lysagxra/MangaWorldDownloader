@@ -201,7 +201,7 @@ def download_page(
         write_file(
             ERROR_LOG,
             mode="a",
-            content=f"Error downloading {filename} from {download_link}: {req_err}\n",
+            content=f"Error downloading {filename} from {download_link}: {req_err}",
         )
 
 
