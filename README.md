@@ -8,6 +8,7 @@
 
 - Downloads multiple chapters concurrently.
 - Supports [batch downloading](https://github.com/Lysagxra/MangaWorldDownloader?tab=readme-ov-file#batch-download) via a list of URLs.
+- Supports downloading a [specified range of chapters](https://github.com/Lysagxra/MangaWorldDownloader?tab=readme-ov-file#single-anime-download)
 - Supports the [generation of PDF files](https://github.com/Lysagxra/MangaWorldDownloader?tab=readme-ov-file#pdf-generation) from the downloaded chapters.
 - Track and display download progress.
 - Organize and format manga chapters efficiently.
@@ -67,14 +68,42 @@ To download a single manga, you can use the `manga_downloader.py` script.
 Run the script followed by the manga URL you want to download:
 
 ```bash
-python3 manga_downloader.py <manga_url>
+python3 manga_downloader.py <manga_url> [--start <start_chapter>] [--end <end_chapter>]
 ```
+
+- `<manga_url>`: The URL of the anime series.
+- `--start <chapter_episode>`: The starting episode number (optional).
+- `--end <chapter_episode>`: The ending episode number (optional).
 
 ### Example
 
 ```bash
 python3 manga_downloader.py https://www.mangaworld.ac/manga/2754/sayonara-eri
 ```
+
+### Examples
+
+To download all chapters:
+```bash
+python3 manga_downloader.py https://www.mangaworld.cx/manga/2472/soloist-of-the-prison
+```
+
+To download a specific range of chapters (e.g., chapters 5 to 10):
+```bash
+python3 manga_downloader.py https://www.mangaworld.cx/manga/2472/soloist-of-the-prison --start 5 --end 10
+```
+
+To download chapters starting from a specific chapter:
+```bash
+python3 manga_downloader.py https://www.mangaworld.cx/manga/2472/soloist-of-the-prison --start 5
+```
+In this case, the script will download all chapters starting from the `--start` chapter to the last chapter.
+
+To download chapters up to a certain chapter:
+```bash
+python3 manga_downloader.py https://www.mangaworld.cx/manga/2472/soloist-of-the-prison --end 10
+```
+In this case, the script will download all chapters starting from the first episode to the `--end` chapter.
 
 ## Batch Download
 
