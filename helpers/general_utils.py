@@ -37,10 +37,8 @@ async def check_real_page(
 
         if match:
             cookie = match.group(1)
-            # print("Extracted Cookie:", cookie)
             cookie = cookie.strip().split("=")
         else:
-            # print("No cookie found")
             return initial_response
 
         # Extract the link
@@ -49,9 +47,7 @@ async def check_real_page(
 
         if match:
             link = match.group(1)  # Extracted link
-            # print("Extracted Link:", link)
         else:
-            # print("No link found")
             return initial_response
 
         # Perform the request
@@ -93,10 +89,35 @@ def create_download_directory(manga_name: str, indx_chapter: int) -> str:
     return download_path
 
 
+def validate_chapter_range(
+    start_chapter: int, end_chapter: int, num_chapters: int,
+) -> tuple:
+    """Validate the chapter range provided by the user."""
+
+    def log_and_exit(message: str) -> None:
+        logging.warning(message)
+        sys.exit(1)
+
+    if start_chapter:
+        if start_chapter < 1 or start_chapter > num_chapters:
+            log_and_exit(f"Start chapter must be between 1 and {num_chapters}.")
+
+    if start_chapter and end_chapter:
+        if start_chapter > end_chapter:
+            log_and_exit("Start chapter cannot be greater than end episode.")
+
+        if start_chapter > num_chapters:
+            log_and_exit(f"End chapter must be between 1 and {num_chapters}.")
+
+    start_index = start_chapter - 1 if start_chapter else 0
+    end_index = end_chapter if end_chapter else num_chapters
+    return start_index, end_index
+
+
 def clear_terminal() -> None:
     """Clear the terminal screen based on the operating system."""
     commands = {
-        "nt": "cls",       # Windows
+        "nt": "cls",  # Windows
         "posix": "clear",  # macOS and Linux
     }
 

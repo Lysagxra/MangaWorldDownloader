@@ -11,10 +11,16 @@ ERROR_LOG = "error_log.txt"    # The file used to log errors.
 
 MAX_WORKERS = 4         # Maximum number of concurrent workers.
 TASK_COLOR = "cyan"     # Color used for task-related output in the terminal.
+
 CHUNK_SIZE = 16 * 1024  # Size of data chunks (bytes) to be processed at a time.
 TIMEOUT = 20            # Timeout value (seconds) for HTTP requests.
 MAX_RETRIES = 30        # Maximum number of retries for failed HTTP requests.
 WAIT_TIME_RETRIES = 10  # Number of seconds to wait between retries.
+
+NUM_URL_PATH_PARTS = 3                               # Number of path segments to
+                                                     # validate the initial URL
+PAGE_EXTENSIONS = [".jpg", ".png", ".gif", ".webp"]  # Possible page extensions
+                                                     # supported for image downloads
 
 # HTTP status codes.
 HTTP_STATUS_OK = 200

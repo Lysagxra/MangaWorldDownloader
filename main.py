@@ -6,7 +6,7 @@ generates PDFs after the download.
 
 import argparse
 import asyncio
-from argparse import ArgumentParser
+from argparse import ArgumentParser, Namespace
 
 from helpers.config import URLS_FILE
 from helpers.file_utils import read_file, write_file
@@ -14,10 +14,10 @@ from helpers.general_utils import clear_terminal
 from manga_downloader import process_manga_download
 
 
-async def process_urls(urls: list[str], *, generate_pdf: bool = False) -> None:
+async def process_urls(urls: list[str], args: Namespace) -> None:
     """Validate and downloads items for a list of URLs."""
     for url in urls:
-        await process_manga_download(url, generate_pdf=generate_pdf)
+        await process_manga_download(url, args=args)
 
 
 def setup_parser() -> ArgumentParser:
@@ -45,7 +45,7 @@ async def main() -> None:
 
     clear_terminal()
     urls = read_file(URLS_FILE)
-    await process_urls(urls, generate_pdf=args.pdf)
+    await process_urls(urls, args=args)
     write_file(URLS_FILE)
 
 

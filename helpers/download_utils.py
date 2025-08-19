@@ -39,8 +39,8 @@ def run_in_parallel(
                 total=100,
                 visible=False,
             )
-            task_info = (job_progress, task, overall_task)
-            item_info = (indx, item)
+            task_info = job_progress, task, overall_task
+            item_info = indx, item
             future = executor.submit(func, item_info, *args, task_info)
             futures[future] = task
             manage_running_tasks(futures, job_progress)

@@ -13,7 +13,8 @@ import argparse
 import asyncio
 import logging
 import random
-from argparse import ArgumentParser
+import re
+from argparse import Namespace
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -32,6 +33,7 @@ from helpers.config import (
     HEADERS,
     HTTP_STATUS_OK,
     MAX_RETRIES,
+    PAGE_EXTENSIONS,
     TIMEOUT,
     WAIT_TIME_RETRIES,
 )
@@ -43,12 +45,10 @@ from helpers.general_utils import (
     clear_terminal,
     create_download_directory,
     fetch_page,
+    validate_chapter_range,
 )
 from helpers.pdf_generator import generate_pdf_files
-from helpers.progress_utils import (
-    create_progress_bar,
-    create_progress_table,
-)
+from helpers.progress_utils import create_progress_bar, create_progress_table
 
 if TYPE_CHECKING:
     from rich.progress import Progress
@@ -151,7 +151,11 @@ async def fetch_download_link(chapter_url: str, session: ClientSession) -> str |
     return None
 
 
-async def extract_download_links(chapter_urls: list[str]) -> list[str]:
+async def extract_download_links(
+    chapter_urls: list[str],
+    start_index: int,
+    end_index: int,
+) -> list[str]:
     """Extract the download links for a list of chapter URLs."""
     async with aiohttp.ClientSession() as session:
         tasks = [
@@ -159,26 +163,25 @@ async def extract_download_links(chapter_urls: list[str]) -> list[str]:
         ]
 
         # Wait for all tasks to complete and filter out None values
-        results = await asyncio.gather(*tasks)
+        download_links = await asyncio.gather(*tasks)
 
-        # Remove the "1.png" suffix from each download link
+        # Remove the suffix from each download link
         return [
-            download_link[: -len("1.png")] for download_link in results if download_link
+            re.sub(r"1\.(png|gif|jpg)$", "", download_link)
+            for download_link in download_links[start_index:end_index]
+            if download_link
         ]
 
 
 def download_page(
     response: Response,
     page: int,
-    base_download_link: str,
+    extension: str,
+    download_link: str,
     download_path: str,
 ) -> None:
     """Download a single page of a chapter."""
-    extension_mapping = {True: ".png", False: ".jpg"}
-    status_check = response.status_code == HTTP_STATUS_OK
-    filename = str(page) + extension_mapping[status_check]
-
-    download_link = base_download_link + filename
+    filename = f"{page}{extension}"
     final_path = Path(download_path) / filename
 
     try:
@@ -204,6 +207,38 @@ def download_page(
             content=f"Error downloading {filename} from {download_link}: {req_err}",
         )
 
+def attempt_download_page(
+    page: int,
+    base_download_link: str,
+    download_path: str,
+) -> bool:
+    """Attempt downloading a page by testing all possible extensions.
+
+    Returns True if download succeeded, False otherwise.
+    """
+    for extension in PAGE_EXTENSIONS:
+        test_download_link = f"{base_download_link}{page}{extension}"
+
+        try:
+            response = SESSION.get(
+                test_download_link,
+                stream=True,
+                headers=HEADERS,
+                timeout=TIMEOUT,
+            )
+            if response.status_code == HTTP_STATUS_OK:
+                download_page(
+                    response, page, extension, test_download_link, download_path,
+                )
+                return True
+
+        except requests.exceptions.RequestException as req_err:
+            message = f"Failed attempt with {test_download_link}: {req_err}"
+            logging.warning(message)
+            continue
+
+    # Every possible extension failed
+    return False
 
 def download_chapter(
     item_info: tuple,
@@ -219,22 +254,11 @@ def download_chapter(
     num_pages = int(pages_per_chapter[indx_chapter])
 
     for page in range(1, num_pages + 1):
-        test_download_link = f"{base_download_link}{page}.png"
+        success = attempt_download_page(page, base_download_link, download_path)
+        if not success:
+            message = f"Page {page} could not be downloaded with any extension."
+            logging.error(message)
 
-        if (
-            Path(test_download_link).exists()
-            or (Path(download_path) / f"{page}.jpg").exists()
-        ):
-            continue
-
-        response = SESSION.get(
-            test_download_link,
-            stream=True,
-            headers=HEADERS,
-            timeout=TIMEOUT,
-        )
-
-        download_page(response, page, base_download_link, download_path)
         progress_percentage = (page / num_pages) * 100
         job_progress.update(task, completed=progress_percentage)
 
@@ -248,14 +272,26 @@ def process_pdf_generation(manga_name: str, job_progress: Progress) -> None:
     generate_pdf_files(str(manga_parent_folder), job_progress)
 
 
-async def process_manga_download(url: str, *, generate_pdf: bool = False) -> None:
+async def process_manga_download(url: str, args: Namespace) -> None:
     """Process the complete download and PDF generation workflow for a manga."""
     soup = await fetch_page(url)
 
     try:
         _, manga_name = extract_manga_info(url)
         chapter_urls, pages_per_chapter = await extract_chapters_info(soup)
-        download_links = await extract_download_links(chapter_urls)
+        num_chapters = len(chapter_urls)
+
+        start_index, end_index = validate_chapter_range(
+            args.start,
+            args.end,
+            num_chapters,
+        )
+
+        download_links = await extract_download_links(
+            chapter_urls,
+            start_index,
+            end_index,
+        )
 
         job_progress = create_progress_bar()
         progress_table = create_progress_table(manga_name, job_progress)
@@ -265,10 +301,10 @@ async def process_manga_download(url: str, *, generate_pdf: bool = False) -> Non
                 download_chapter,
                 download_links,
                 job_progress,
-                pages_per_chapter,
+                pages_per_chapter[start_index:end_index],
                 manga_name,
             )
-            if generate_pdf:
+            if args.pdf:
                 process_pdf_generation(manga_name, job_progress)
 
     except ValueError as val_err:
@@ -276,27 +312,38 @@ async def process_manga_download(url: str, *, generate_pdf: bool = False) -> Non
         logging.exception(message)
 
 
-def setup_parser() -> ArgumentParser:
+def setup_parser() -> argparse.Namespace:
     """Set up and return the argument parser for the manga download process."""
     parser = argparse.ArgumentParser(
         description="Download manga and optionally generate a PDF.",
     )
+    parser.add_argument("url", type=str, help="The URL of the manga to process.")
     parser.add_argument(
         "-p",
         "--pdf",
         action="store_true",
         help="Generate PDF after downloading the manga.",
     )
-    parser.add_argument("url", type=str, help="The URL of the manga to process.")
-    return parser
+    parser.add_argument(
+        "--start",
+        type=int,
+        default=None,
+        help="The starting chapter number.",
+    )
+    parser.add_argument(
+        "--end",
+        type=int,
+        default=None,
+        help="The ending chapter number.",
+    )
+    return parser.parse_args()
 
 
 async def main() -> None:
     """Initiate the manga download process from a given URL."""
     clear_terminal()
-    parser = setup_parser()
-    args = parser.parse_args()
-    await process_manga_download(args.url, generate_pdf=args.pdf)
+    args = setup_parser()
+    await process_manga_download(args.url, args=args)
 
 
 if __name__ == "__main__":
