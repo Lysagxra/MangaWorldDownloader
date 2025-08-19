@@ -72,8 +72,8 @@ python3 manga_downloader.py <manga_url> [--start <start_chapter>] [--end <end_ch
 ```
 
 - `<manga_url>`: The URL of the anime series.
-- `--start <chapter_episode>`: The starting episode number (optional).
-- `--end <chapter_episode>`: The ending episode number (optional).
+- `--start <start_chapter>`: The starting chapter number (optional).
+- `--end <end_chapter>`: The ending chapter number (optional).
 
 ### Example
 
@@ -103,7 +103,7 @@ To download chapters up to a certain chapter:
 ```bash
 python3 manga_downloader.py https://www.mangaworld.cx/manga/2472/soloist-of-the-prison --end 10
 ```
-In this case, the script will download all chapters starting from the first episode to the `--end` chapter.
+In this case, the script will download all chapters starting from the first chapter to the `--end` chapter.
 
 ## Batch Download
 
