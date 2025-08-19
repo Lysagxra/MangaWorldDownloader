@@ -27,7 +27,7 @@
 ```
 project-root/
 ├── helpers/
-│ ├── download_utils.py  # Manages constants and settings used across the project
+│ ├── config.py          # Manages constants and settings used across the project
 │ ├── download_utils.py  # Utilities for managing the download process
 │ ├── file_utils.py      # Utilities for managing file operations
 │ ├── format_utils.py    # Functions for formatting manga data
