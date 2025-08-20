@@ -132,14 +132,14 @@ The downloaded files will be saved in the `Downloads` directory.
 
 ## PDF Generation
 
-This tool includes a feature to generate PDFs from downloaded manga chapters. You can use the `-p` argument from the command line to enable this functionality.
+This tool includes a feature to generate PDFs from downloaded manga chapters. You can use the `--pdf` argument from the command line to enable this functionality.
 
 ### Usage
 
 To generate PDFs for the downloaded manga, run the following command:
 
 ```bash
-python3 main.py -p
+python3 main.py --pdf
 ```
 
 This will create PDF files for each chapter and save them in the specified output directory. The generated PDFs maintain the original quality of the downloaded images and are optimized for readability.
