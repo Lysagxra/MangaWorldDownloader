@@ -82,7 +82,6 @@ def create_download_directory(manga_name: str, indx_chapter: int) -> str:
     """Create the directory structure for downloading a specific chapter of a manga."""
     path = Path(DOWNLOAD_FOLDER) / manga_name
     path.mkdir(parents=True, exist_ok=True)
-
     subdir_name = Path(manga_name) / f"Chapter {indx_chapter + 1}"
     download_path = Path(DOWNLOAD_FOLDER) / Path(subdir_name)
     download_path.mkdir(parents=True, exist_ok=True)
@@ -117,7 +116,7 @@ def validate_chapter_range(
 def clear_terminal() -> None:
     """Clear the terminal screen based on the operating system."""
     commands = {
-        "nt": "cls",  # Windows
+        "nt": "cls",       # Windows
         "posix": "clear",  # macOS and Linux
     }
 

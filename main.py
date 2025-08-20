@@ -37,8 +37,8 @@ def setup_parser() -> ArgumentParser:
 async def main() -> None:
     """Run the script.
 
-    Reads URLs from a file, processes the downloads for each URL, and clears
-    the file after the processing is complete.
+    Reads URLs from a file, processes the downloads for each URL, and clears the file
+    after the processing is complete.
     """
     parser = setup_parser()
     args = parser.parse_args()

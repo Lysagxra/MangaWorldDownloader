@@ -22,7 +22,6 @@ import aiohttp
 import requests
 from aiohttp import ClientSession
 from bs4 import BeautifulSoup
-from PIL import ImageFile
 from requests import Response
 from rich.live import Live
 
@@ -34,6 +33,7 @@ from helpers.config import (
     HTTP_STATUS_OK,
     MAX_RETRIES,
     PAGE_EXTENSIONS,
+    SESSION,
     TIMEOUT,
     WAIT_TIME_RETRIES,
 )
@@ -53,14 +53,10 @@ from helpers.progress_utils import create_progress_bar, create_progress_table
 if TYPE_CHECKING:
     from rich.progress import Progress
 
-ImageFile.LOAD_TRUNCATED_IMAGES = True
-SESSION = requests.Session()
-
 
 async def fetch_chapter_data(chapter_url: str, session: ClientSession) -> tuple:
     """Fetch the number of pages for a given chapter URL, retrying if necessary."""
-    attempt = 0
-    while attempt < MAX_RETRIES:
+    for attempt in range(MAX_RETRIES):
         try:
             async with session.get(chapter_url, timeout=TIMEOUT) as response:
                 soup = BeautifulSoup(await response.text(), "html.parser")
@@ -75,9 +71,8 @@ async def fetch_chapter_data(chapter_url: str, session: ClientSession) -> tuple:
         except (aiohttp.ClientError, asyncio.TimeoutError):
             pass
 
-        attempt += 1
-        if attempt < MAX_RETRIES:
-            delay = 1 + random.uniform(0, WAIT_TIME_RETRIES - 1)  # noqa: S311
+        if attempt < MAX_RETRIES - 1:
+            delay = random.uniform(1, WAIT_TIME_RETRIES - 1)  # noqa: S311
             await asyncio.sleep(delay)
 
     message = f"Failed to fetch chapter data for {chapter_url}."
@@ -94,6 +89,7 @@ async def get_chapter_urls_and_pages(
     chapter_items = soup.find_all("a", {"class": "chap", "title": True})
     tasks = []
 
+    # Create a list of tasks only for chapters that contain the match
     for chapter_item in chapter_items:
         chapter_url = chapter_item["href"]
         if match in chapter_url:
@@ -126,8 +122,7 @@ async def extract_chapters_info(soup: BeautifulSoup) -> tuple:
 
 async def fetch_download_link(chapter_url: str, session: ClientSession) -> str | None:
     """Fetch the download link for the first image in a chapter page."""
-    attempt = 0
-    while attempt < MAX_RETRIES:
+    for attempt in range(MAX_RETRIES):
         try:
             url_to_fetch = f"{chapter_url}/1"
             async with session.get(url_to_fetch, timeout=TIMEOUT) as response:
@@ -141,8 +136,8 @@ async def fetch_download_link(chapter_url: str, session: ClientSession) -> str |
         except (aiohttp.ClientError, asyncio.TimeoutError):
             pass
 
-        attempt += 1
-        if attempt < MAX_RETRIES:
+        # Delay before retrying, but not after the last attempt
+        if attempt < MAX_RETRIES - 1:
             delay = 1 + random.uniform(0, WAIT_TIME_RETRIES)  # noqa: S311
             await asyncio.sleep(delay)
 
@@ -193,11 +188,6 @@ def download_page(
         )
         response.raise_for_status()
 
-        with Path(final_path).open("wb") as file:
-            for chunk in response.iter_content(chunk_size=CHUNK_SIZE):
-                if chunk is not None:
-                    file.write(chunk)
-
     except requests.exceptions.RequestException as req_err:
         message = f"Error downloading {filename}: {req_err}"
         logging.exception(message)
@@ -206,6 +196,13 @@ def download_page(
             mode="a",
             content=f"Error downloading {filename} from {download_link}: {req_err}",
         )
+
+    else:
+        with Path(final_path).open("wb") as file:
+            for chunk in response.iter_content(chunk_size=CHUNK_SIZE):
+                if chunk is not None:
+                    file.write(chunk)
+
 
 def attempt_download_page(
     page: int,
@@ -228,7 +225,11 @@ def attempt_download_page(
             )
             if response.status_code == HTTP_STATUS_OK:
                 download_page(
-                    response, page, extension, test_download_link, download_path,
+                    response,
+                    page,
+                    extension,
+                    test_download_link,
+                    download_path,
                 )
                 return True
 
@@ -239,6 +240,7 @@ def attempt_download_page(
 
     # Every possible extension failed
     return False
+
 
 def download_chapter(
     item_info: tuple,
@@ -286,13 +288,17 @@ async def process_manga_download(url: str, args: Namespace) -> None:
             args.end,
             num_chapters,
         )
-
         download_links = await extract_download_links(
             chapter_urls,
             start_index,
             end_index,
         )
 
+    except ValueError as val_err:
+        message = f"Value error: {val_err}"
+        logging.exception(message)
+
+    else:
         job_progress = create_progress_bar()
         progress_table = create_progress_table(manga_name, job_progress)
 
@@ -306,10 +312,6 @@ async def process_manga_download(url: str, args: Namespace) -> None:
             )
             if args.pdf:
                 process_pdf_generation(manga_name, job_progress)
-
-    except ValueError as val_err:
-        message = f"Value error: {val_err}"
-        logging.exception(message)
 
 
 def setup_parser() -> argparse.Namespace:
