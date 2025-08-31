@@ -6,9 +6,9 @@ generates PDFs after the download.
 
 import argparse
 import asyncio
-from argparse import ArgumentParser, Namespace
+from argparse import Namespace
 
-from helpers.config import URLS_FILE
+from helpers.config import ERROR_LOG, URLS_FILE
 from helpers.file_utils import read_file, write_file
 from helpers.general_utils import clear_terminal
 from manga_downloader import process_manga_download
@@ -17,11 +17,11 @@ from manga_downloader import process_manga_download
 async def process_urls(urls: list[str], args: Namespace) -> None:
     """Validate and downloads items for a list of URLs."""
     for url in urls:
-        await process_manga_download(url, args=args)
+        await process_manga_download(url, generate_pdf=args.pdf)
 
 
-def setup_parser() -> ArgumentParser:
-    """Set up and return the argument parser for the manga download process."""
+def parse_arguments() -> Namespace:
+    """Parse only the --pdf argument."""
     parser = argparse.ArgumentParser(
         description="Download manga and optionally generate a PDF.",
     )
@@ -31,7 +31,7 @@ def setup_parser() -> ArgumentParser:
         action="store_true",
         help="Generate PDF after downloading the manga.",
     )
-    return parser
+    return parser.parse_args()
 
 
 async def main() -> None:
@@ -40,10 +40,9 @@ async def main() -> None:
     Reads URLs from a file, processes the downloads for each URL, and clears the file
     after the processing is complete.
     """
-    parser = setup_parser()
-    args = parser.parse_args()
-
     clear_terminal()
+    args = parse_arguments()
+    write_file(ERROR_LOG)
     urls = read_file(URLS_FILE)
     await process_urls(urls, args=args)
     write_file(URLS_FILE)

@@ -274,7 +274,13 @@ def process_pdf_generation(manga_name: str, job_progress: Progress) -> None:
     generate_pdf_files(str(manga_parent_folder), job_progress)
 
 
-async def process_manga_download(url: str, args: Namespace) -> None:
+async def process_manga_download(
+    url: str,
+    start_chapter: int | None = None,
+    end_chapter: int | None = None,
+    *,
+    generate_pdf: bool = False,
+) -> None:
     """Process the complete download and PDF generation workflow for a manga."""
     soup = await fetch_page(url)
 
@@ -284,8 +290,8 @@ async def process_manga_download(url: str, args: Namespace) -> None:
         num_chapters = len(chapter_urls)
 
         start_index, end_index = validate_chapter_range(
-            args.start,
-            args.end,
+            start_chapter,
+            end_chapter,
             num_chapters,
         )
         download_links = await extract_download_links(
@@ -310,12 +316,12 @@ async def process_manga_download(url: str, args: Namespace) -> None:
                 pages_per_chapter[start_index:end_index],
                 manga_name,
             )
-            if args.pdf:
+            if generate_pdf:
                 process_pdf_generation(manga_name, job_progress)
 
 
-def setup_parser() -> argparse.Namespace:
-    """Set up and return the argument parser for the manga download process."""
+def parse_arguments() -> Namespace:
+    """Parse command-line arguments."""
     parser = argparse.ArgumentParser(
         description="Download manga and optionally generate a PDF.",
     )
@@ -344,8 +350,10 @@ def setup_parser() -> argparse.Namespace:
 async def main() -> None:
     """Initiate the manga download process from a given URL."""
     clear_terminal()
-    args = setup_parser()
-    await process_manga_download(args.url, args=args)
+    args = parse_arguments()
+    await process_manga_download(
+        args.url, start_chapter=args.start, end_chapter=args.end, generate_pdf=args.pdf,
+    )
 
 
 if __name__ == "__main__":
