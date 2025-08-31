@@ -287,12 +287,11 @@ async def process_manga_download(
     try:
         _, manga_name = extract_manga_info(url)
         chapter_urls, pages_per_chapter = await extract_chapters_info(soup)
-        num_chapters = len(chapter_urls)
 
         start_index, end_index = validate_chapter_range(
             start_chapter,
             end_chapter,
-            num_chapters,
+            num_chapters=len(chapter_urls),
         )
         download_links = await extract_download_links(
             chapter_urls,
