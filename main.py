@@ -35,16 +35,19 @@ def parse_arguments() -> Namespace:
 
 
 async def main() -> None:
-    """Run the script.
-
-    Reads URLs from a file, processes the downloads for each URL, and clears the file
-    after the processing is complete.
-    """
+    """Run the script."""
+    # Clear the terminal and session log file
     clear_terminal()
-    args = parse_arguments()
     write_file(ERROR_LOG)
-    urls = read_file(URLS_FILE)
+
+    # Parse arguments
+    args = parse_arguments()
+
+    # Read and process URLs, ignoring empty lines
+    urls = [url.strip() for url in read_file(URLS_FILE) if url.strip()]
     await process_urls(urls, args=args)
+
+    # Clear URLs file
     write_file(URLS_FILE)
 
 
