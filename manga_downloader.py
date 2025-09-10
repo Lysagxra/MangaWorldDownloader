@@ -9,12 +9,11 @@ process.
 
 from __future__ import annotations
 
-import argparse
 import asyncio
 import logging
 import random
 import re
-from argparse import Namespace
+from argparse import ArgumentParser, Namespace
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -319,18 +318,22 @@ async def process_manga_download(
                 process_pdf_generation(manga_name, job_progress)
 
 
-def parse_arguments() -> Namespace:
-    """Parse command-line arguments."""
-    parser = argparse.ArgumentParser(
-        description="Download manga and optionally generate a PDF.",
-    )
-    parser.add_argument("url", type=str, help="The URL of the manga to process.")
+def add_pdf_argument(parser: ArgumentParser) -> None:
+    """Add a command-line argument to enable PDF generation."""
     parser.add_argument(
         "-p",
         "--pdf",
         action="store_true",
         help="Generate PDF after downloading the manga.",
     )
+
+def parse_arguments() -> Namespace:
+    """Parse command-line arguments."""
+    parser = ArgumentParser(
+        description="Download manga and optionally generate a PDF.",
+    )
+    parser.add_argument("url", type=str, help="The URL of the manga to process.")
+    add_pdf_argument(parser)
     parser.add_argument(
         "--start",
         type=int,
