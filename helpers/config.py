@@ -26,6 +26,9 @@ MAX_RETRIES = 30        # Maximum number of retries for failed HTTP requests.
 WAIT_TIME_RETRIES = 10  # Number of seconds to wait between retries.
 NUM_URL_PATH_PARTS = 3  # Number of path segments to validate the initial URL.
 
+# Manga types that behave like classic Manga (same pagination).
+MANGA_LIKE = {"Manga", "Oneshot", "Doujinshi", "Manhua"}
+
 # ============================
 # Image Download Settings
 # ============================

@@ -14,7 +14,7 @@ def conv2uppercase(string: str) -> str:
 
 
 def extract_manga_info(url: str) -> tuple:
-    """Extract manga ID and manga name from a given URL."""
+    """Extract manga slug and format the manga name from a given URL."""
     parsed_url = urlparse(url)
 
     # Check if the URL path contains the expected structure
@@ -25,17 +25,17 @@ def extract_manga_info(url: str) -> tuple:
         return None
 
     manga_id = path_parts[1]
-    manga_name = path_parts[2]
+    manga_slug = path_parts[2]
 
     try:
         formatted_manga_name = re.sub(
             r"(^|\s)(\S)",
             conv2uppercase,
-            manga_name.replace("-", " "),
+            manga_slug.replace("-", " "),
         )
 
     except IndexError:
         logging.exception("Invalid URL format.")
         sys.exit(1)
 
-    return manga_id, formatted_manga_name
+    return manga_id, formatted_manga_name, manga_slug

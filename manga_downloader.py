@@ -30,6 +30,7 @@ from helpers.config import (
     ERROR_LOG,
     HEADERS,
     HTTP_STATUS_OK,
+    MANGA_LIKE,
     MAX_RETRIES,
     PAGE_EXTENSIONS,
     SESSION,
@@ -119,18 +120,41 @@ async def extract_chapters_info(soup: BeautifulSoup) -> tuple:
         return chapter_urls, pages_per_chapter
 
 
-async def fetch_download_link(chapter_url: str, session: ClientSession) -> str | None:
+def build_chapter_url(chapter_url: str, manga_type: str) -> str | None:
+    """Return the normalized chapter URL based on manga type, or None if unsupported."""
+    if manga_type in MANGA_LIKE:
+        return f"{chapter_url}/1"
+
+    # Manhwa are paginated differently by default. The URL below adjusts it to behave
+    # like a Manga, displaying one image per page.
+    if manga_type == "Manhwa":
+        return f"{chapter_url.replace("?style=list", "/1?style=pages")}"
+
+    log_message = f"Manga type '{manga_type}' is not supported."
+    logging.warning(log_message)
+    return None
+
+
+async def fetch_download_link(
+    chapter_url: str, session: ClientSession, manga_type: str |None = None,
+) -> str | None:
     """Fetch the download link for the first image in a chapter page."""
+    if manga_type is None:
+        logging.warning("Manga type not found.")
+        return None
+
+    url_to_fetch = build_chapter_url(chapter_url, manga_type)
+
     for attempt in range(MAX_RETRIES):
         try:
-            url_to_fetch = f"{chapter_url}/1"
             async with session.get(url_to_fetch, timeout=TIMEOUT) as response:
                 soup = BeautifulSoup(await response.text(), "html.parser")
                 validated_soup = await check_real_page(soup, session, TIMEOUT)
-
                 img_items = validated_soup.find_all("img", {"class": "img-fluid"})
+
+                # Download link found
                 if img_items:
-                    return img_items[-1]["src"]  # Download link found
+                    return img_items[-1]["src"]
 
         except (aiohttp.ClientError, asyncio.TimeoutError):
             pass
@@ -149,11 +173,13 @@ async def extract_download_links(
     chapter_urls: list[str],
     start_index: int,
     end_index: int,
+    manga_type: str,
 ) -> list[str]:
     """Extract the download links for a list of chapter URLs."""
     async with aiohttp.ClientSession() as session:
         tasks = [
-            fetch_download_link(chapter_url, session) for chapter_url in chapter_urls
+            fetch_download_link(chapter_url, session, manga_type=manga_type)
+            for chapter_url in chapter_urls
         ]
 
         # Wait for all tasks to complete and filter out None values
@@ -171,7 +197,6 @@ def download_page(
     response: Response,
     page: int,
     extension: str,
-    download_link: str,
     download_path: str,
 ) -> None:
     """Download a single page of a chapter."""
@@ -179,28 +204,15 @@ def download_page(
     final_path = Path(download_path) / filename
 
     try:
-        response = SESSION.get(
-            download_link,
-            stream=True,
-            headers=HEADERS,
-            timeout=TIMEOUT,
-        )
-        response.raise_for_status()
-
-    except requests.exceptions.RequestException as req_err:
-        message = f"Error downloading {filename}: {req_err}"
-        logging.exception(message)
-        write_file(
-            ERROR_LOG,
-            mode="a",
-            content=f"Error downloading {filename} from {download_link}: {req_err}",
-        )
-
-    else:
         with Path(final_path).open("wb") as file:
             for chunk in response.iter_content(chunk_size=CHUNK_SIZE):
                 if chunk is not None:
                     file.write(chunk)
+
+    except requests.exceptions.RequestException as req_err:
+        log_message = f"Failed to download page {page}: {req_err}"
+        logging.warning(log_message)
+        write_file(ERROR_LOG, mode="a", content=log_message)
 
 
 def attempt_download_page(
@@ -227,14 +239,13 @@ def attempt_download_page(
                     response,
                     page,
                     extension,
-                    test_download_link,
                     download_path,
                 )
                 return True
 
         except requests.exceptions.RequestException as req_err:
-            message = f"Failed attempt with {test_download_link}: {req_err}"
-            logging.warning(message)
+            log_message = f"Failed attempt with {test_download_link}: {req_err}"
+            logging.warning(log_message)
             continue
 
     # Every possible extension failed
@@ -257,8 +268,8 @@ def download_chapter(
     for page in range(1, num_pages + 1):
         success = attempt_download_page(page, base_download_link, download_path)
         if not success:
-            message = f"Page {page} could not be downloaded with any extension."
-            logging.error(message)
+            log_message = f"Page {page} could not be downloaded with any extension."
+            logging.error(log_message)
 
         progress_percentage = (page / num_pages) * 100
         job_progress.update(task, completed=progress_percentage)
@@ -272,6 +283,28 @@ def process_pdf_generation(manga_name: str, job_progress: Progress) -> None:
     manga_parent_folder = Path(DOWNLOAD_FOLDER) / manga_name
     generate_pdf_files(str(manga_parent_folder), job_progress)
 
+def extract_manga_type(soup: BeautifulSoup, manga_slug: str) -> str | None:
+    """Extract the type of manga (e.g., "Manga") from the page's script content."""
+    script_items = soup.find_all("script")
+    script_text = script_items[-1].get_text()
+
+    # Build the regex pattern to find the manga data based on its slug
+    manga_slug_pattern = rf'"slug":"{manga_slug}".*?"typeT":\s*"[^"]*"'
+    slug_match = re.search(manga_slug_pattern, script_text)
+
+    # If the manga_slug is found, extract the part containing the typeT
+    if slug_match:
+        manga_slug_text = slug_match.group(0)
+
+        manga_type_pattern = r'"typeT":\s*"([^"]*)"'
+        type_match = re.search(manga_type_pattern, manga_slug_text)
+
+        # Return the manga type if found, otherwise return None
+        if type_match:
+            return type_match.group(1)
+
+    return None
+
 
 async def process_manga_download(
     url: str,
@@ -281,41 +314,36 @@ async def process_manga_download(
     generate_pdf: bool = False,
 ) -> None:
     """Process the complete download and PDF generation workflow for a manga."""
+    _, manga_name, manga_slug = extract_manga_info(url)
     soup = await fetch_page(url)
+    manga_type = extract_manga_type(soup, manga_slug)
 
-    try:
-        _, manga_name = extract_manga_info(url)
-        chapter_urls, pages_per_chapter = await extract_chapters_info(soup)
+    chapter_urls, pages_per_chapter = await extract_chapters_info(soup)
+    start_index, end_index = validate_chapter_range(
+        start_chapter,
+        end_chapter,
+        num_chapters=len(chapter_urls),
+    )
+    download_links = await extract_download_links(
+        chapter_urls,
+        start_index,
+        end_index,
+        manga_type,
+    )
 
-        start_index, end_index = validate_chapter_range(
-            start_chapter,
-            end_chapter,
-            num_chapters=len(chapter_urls),
+    job_progress = create_progress_bar()
+    progress_table = create_progress_table(manga_name, job_progress)
+
+    with Live(progress_table, refresh_per_second=10):
+        run_in_parallel(
+            download_chapter,
+            download_links,
+            job_progress,
+            pages_per_chapter[start_index:end_index],
+            manga_name,
         )
-        download_links = await extract_download_links(
-            chapter_urls,
-            start_index,
-            end_index,
-        )
-
-    except ValueError as val_err:
-        message = f"Value error: {val_err}"
-        logging.exception(message)
-
-    else:
-        job_progress = create_progress_bar()
-        progress_table = create_progress_table(manga_name, job_progress)
-
-        with Live(progress_table, refresh_per_second=10):
-            run_in_parallel(
-                download_chapter,
-                download_links,
-                job_progress,
-                pages_per_chapter[start_index:end_index],
-                manga_name,
-            )
-            if generate_pdf:
-                process_pdf_generation(manga_name, job_progress)
+        if generate_pdf:
+            process_pdf_generation(manga_name, job_progress)
 
 
 def add_pdf_argument(parser: ArgumentParser) -> None:
