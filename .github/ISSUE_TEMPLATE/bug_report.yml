@@ -32,7 +32,7 @@ body:
         Before opening an issue, please confirm that you have read the relevant sections of the project's `README.md`.
 
       options:
-        - label: "I'm using the latest version of the tool"
+        - label: "I'm using the latest version of the tool."
           required: true
         - label: "I’ve read the `README.md`."
           required: true
@@ -66,7 +66,10 @@ body:
   - id: other-os
     attributes:
       label: Please specify your operating system
-      description: If you selected "Other", please provide the exact operating system and version you're using.
+
+      description: |
+        If you selected "Other", please provide the exact operating system and version you're using. Leave it blank otherwise.
+
       placeholder: "Example: ChromeOS"
   
     type: input
@@ -132,7 +135,7 @@ body:
   - id: relevant-logs
     attributes:
       label: Relevant logs
-      description: If you have an error log or stack trace, paste it here within backticks (```).
+      description: If you have an error log or stack trace, paste it here within backticks (```). Leave it blank otherwise.
       placeholder: |
         Please copy the error log from your terminal and paste it here, formatted within backticks (```), like this:
         ```
@@ -166,7 +169,7 @@ body:
   - id: contact
     attributes:
       label: Contact details
-      description: How can we get in touch with you if we need more info?
+      description: How can we get in touch with you if we need more info? Leave it blank if you prefer not to provide this info.
       placeholder: "Example: email@example.com"
 
     type: input
