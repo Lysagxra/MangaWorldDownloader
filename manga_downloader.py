@@ -128,7 +128,7 @@ def build_chapter_url(chapter_url: str, manga_type: str) -> str | None:
     # Manhwa are paginated differently by default. The URL below adjusts it to behave
     # like a Manga, displaying one image per page.
     if manga_type == "Manhwa":
-        return f"{chapter_url.replace("?style=list", "/1?style=pages")}"
+        return chapter_url.replace("?style=list", "/1?style=pages")
 
     log_message = f"Manga type '{manga_type}' is not supported."
     logging.warning(log_message)
