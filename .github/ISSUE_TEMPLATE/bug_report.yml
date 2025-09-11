@@ -5,11 +5,13 @@ labels: [ "bug" ]
 assignees: [ Lysagxra ]
 
 body:
-  - type: markdown
+  - id: thank-you
+    type: markdown
     attributes:
       value: Thanks for taking the time to fill out this bug report!
 
-  - type: markdown
+  - id: thank-you
+    type: markdown
     attributes:
       value: |
         > [!IMPORTANT]
@@ -25,6 +27,7 @@ body:
         https://github.com/Lysagxra/MangaWorldDownloader/releases
 
   - id: prechecks
+    type: checkboxes
     attributes:
       label: Steps to troubleshoot my issue
 
@@ -44,10 +47,9 @@ body:
           required: false
         - label: "I am willing to submit a pull request with the fix. *(Assign this issue to me)*"
           required: false
-    
-    type: checkboxes
 
   - id: operating-system
+    type: dropdown
     attributes:
       label: Operating system
       description: What operating system, version are you working with?
@@ -57,13 +59,12 @@ body:
         - Linux
         - macOS
         - Other (Please specify)
-
-    type: dropdown
     
     validations:
       required: true
   
   - id: other-os
+    type: input
     attributes:
       label: Please specify your operating system
 
@@ -72,35 +73,32 @@ body:
         Leave it blank otherwise.
 
       placeholder: "Example: ChromeOS 126"
-  
-    type: input
 
     validations:
       required: false
 
   - id: python-version
+    type: input
     attributes:
       label: Python version
       description: What version of Python are you working with?
       placeholder: "Example: 3.13.3"
     
-    type: input
-    
     validations:
       required: true
   
   - id: tool-version
+    type: input
     attributes:
       label: Tool version
       description: What version of the tool are you encountering this issue with?
       placeholder: "Example: Version 1.0.0"
     
-    type: input
-    
     validations:
       required: true
 
   - id: bug-description
+    type: textarea
     attributes:
       label: Describe the bug
 
@@ -113,12 +111,11 @@ body:
         3. Provide an example URL that showcases it (if applicable).
         4. Add screenshots to help explain your problem (if applicable).
     
-    type: textarea
-    
     validations:
       required: true
   
   - id: reproduce-steps
+    type: textarea
     attributes:
       label: Steps to help reproduce the behavior
 
@@ -130,12 +127,11 @@ body:
           2. List any commands you ran or actions you took.
           3. Describe the error or issue you encountered.
     
-    type: textarea
-    
     validations:
       required: true
 
   - id: relevant-logs
+    type: textarea
     attributes:
       label: Relevant logs
       
@@ -150,12 +146,11 @@ body:
         Insert your error log here...
         ```
     
-    type: textarea
-    
     validations:
       required: false
 
   - id: additional-context
+    type: textarea
     attributes:
       label: Additional context
 
@@ -169,12 +164,11 @@ body:
           - Were there any recent changes to your environment or the tool before the issue occurred?
           - Any workarounds you may have tried or that worked?
 
-    type: textarea
-
     validations:
       required: false
 
   - id: contact-details
+    type: input
     attributes:
       label: Contact details
 
@@ -183,8 +177,6 @@ body:
         Leave it blank if you prefer not to provide this info.
 
       placeholder: "Example: email@example.com"
-
-    type: input
 
     validations:
       required: false
