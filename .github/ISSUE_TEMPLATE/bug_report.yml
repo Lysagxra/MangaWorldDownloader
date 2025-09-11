@@ -7,11 +7,13 @@ assignees: [ Lysagxra ]
 body:
   - id: thank-you
     type: markdown
+    
     attributes:
       value: Thanks for taking the time to fill out this bug report!
 
-  - id: thank-you
+  - id: submission-guidelines
     type: markdown
+    
     attributes:
       value: |
         > [!IMPORTANT]
@@ -28,6 +30,7 @@ body:
 
   - id: prechecks
     type: checkboxes
+    
     attributes:
       label: Steps to troubleshoot my issue
 
@@ -50,6 +53,7 @@ body:
 
   - id: operating-system
     type: dropdown
+    
     attributes:
       label: Operating system
       description: What operating system, version are you working with?
@@ -65,6 +69,7 @@ body:
   
   - id: other-os
     type: input
+    
     attributes:
       label: Please specify your operating system
 
@@ -79,6 +84,7 @@ body:
 
   - id: python-version
     type: input
+    
     attributes:
       label: Python version
       description: What version of Python are you working with?
@@ -89,6 +95,7 @@ body:
   
   - id: tool-version
     type: input
+    
     attributes:
       label: Tool version
       description: What version of the tool are you encountering this issue with?
@@ -99,6 +106,7 @@ body:
 
   - id: bug-description
     type: textarea
+    
     attributes:
       label: Describe the bug
 
@@ -116,6 +124,7 @@ body:
   
   - id: reproduce-steps
     type: textarea
+    
     attributes:
       label: Steps to help reproduce the behavior
 
@@ -132,6 +141,7 @@ body:
 
   - id: relevant-logs
     type: textarea
+    
     attributes:
       label: Relevant logs
       
@@ -151,6 +161,7 @@ body:
 
   - id: additional-context
     type: textarea
+    
     attributes:
       label: Additional context
 
@@ -169,6 +180,7 @@ body:
 
   - id: contact-details
     type: input
+    
     attributes:
       label: Contact details
 
