@@ -26,7 +26,7 @@ MANGA_TYPE_REGEX = r'"typeT":\s*"([^"]*)"'
 # Download Settings
 # ============================
 TASK_COLOR = "cyan"     # Color used for task-related output in the terminal.
-MAX_WORKERS = 3         # Maximum number of concurrent workers.
+MAX_WORKERS = 4         # Maximum number of concurrent workers.
 CHUNK_SIZE = 16 * 1024  # Size of data chunks (bytes) to be processed at a time.
 TIMEOUT = 20            # Timeout value (seconds) for HTTP requests.
 MAX_RETRIES = 30        # Maximum number of retries for failed HTTP requests.
