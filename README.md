@@ -2,7 +2,7 @@
 
 > A Python-based tool for downloading and organizing manga content from MangaWorld.
 
-![Demo](https://github.com/Lysagxra/MangaWorldDownloader/blob/8d3a28187c1b16f541ac6df1f6c82aa0b36e9725/misc/Demo.gif)
+![Demo](https://github.com/Lysagxra/MangaWorldDownloader/blob/a8dca98cb0fece9d7eab672ea30fea5ab50bcf34/assets/demo.gif)
 
 ## Features
 
@@ -22,7 +22,9 @@
 - `Pillow` - for image processing
 - `rich` - for progress display in terminal
 
-## Directory Structure
+<details>
+
+<summary>Show directory structure</summary>
 
 ```
 project-root/
@@ -38,6 +40,8 @@ project-root/
 ├── main.py              # Main script to run the downloader
 └── URLs.txt             # Text file containing manga URLs
 ```
+
+</details>
 
 ## Installation
 
@@ -143,3 +147,7 @@ python3 main.py --pdf
 ```
 
 This will create PDF files for each chapter and save them in the specified output directory. The generated PDFs maintain the original quality of the downloaded images and are optimized for readability.
+
+## Logging
+
+The application logs any issues encountered during the download process in a file named `session.log`. Check this file for any URLs that may have been blocked or had errors.
