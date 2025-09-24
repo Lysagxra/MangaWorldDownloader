@@ -193,3 +193,41 @@ def extract_manga_type(soup: BeautifulSoup, manga_slug: str) -> str | None:
             return type_match.group(1)
 
     return None
+
+def extract_volume_info(soup):
+    """
+    Extracts the volume list and relative list of chapter URLs.
+    If a page doesn't contain volumes, it'll retrieve a volume with all chapters.
+    Output:
+        [
+            {"name": "Volume 1", "chapters": [{"title": ..., "url": ...}, ...]},
+            ...
+        ]
+    """
+    """Fetch the download link for the first image in a chapter page."""
+    volumes = []
+    volume_elements = soup.find_all("div", class_="volume-element")
+    if volume_elements:
+        for vol in volume_elements:
+            # Volume name
+            name_tag = vol.find("p", class_="volume-name")
+            volume_name = name_tag.get_text(strip=True) if name_tag else "Volume"
+            # Volume chapters
+            chapters = []
+            chapters_container = vol.find("div", class_="volume-chapters")
+            if chapters_container:
+                chapter_divs = chapters_container.find_all("div", class_="chapter")
+                for chap in chapter_divs:
+                    a_tag = chap.find("a", class_="chap", title=True)
+                    if a_tag:
+                        chapters.append({
+                            "title": a_tag["title"],
+                            "url": a_tag["href"]
+                        })
+            if chapters:
+                volumes.append({"name": volume_name, "chapters": sorted(chapters, key=lambda c: c['title'])})
+    else:
+        # No available volumes
+        logging.error("The selected link doesn't have available volumes.")
+        return None
+    return sorted(volumes, key=lambda v: v['name'])
