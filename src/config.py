@@ -72,6 +72,12 @@ def add_common_arguments(parser: ArgumentParser) -> None:
         action="store_true",
         help="Generate PDF after downloading the manga.",
     )
+    parser.add_argument(
+        "-v",
+        "--volume",
+        action="store_true",
+        help="Specify a volume to download (use 'all' to get all volumes).",
+    )
 
 
 def setup_parser(
