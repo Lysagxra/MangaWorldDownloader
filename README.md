@@ -7,6 +7,7 @@
 ## Features
 
 - Downloads multiple chapters concurrently.
+- Downloads chapters by volume (if available).
 - Supports [batch downloading](https://github.com/Lysagxra/MangaWorldDownloader?tab=readme-ov-file#batch-download) via a list of URLs.
 - Supports downloading a [specified range of chapters](https://github.com/Lysagxra/MangaWorldDownloader?tab=readme-ov-file#single-manga-download).
 - Supports the [generation of PDF files](https://github.com/Lysagxra/MangaWorldDownloader?tab=readme-ov-file#pdf-generation) from the downloaded chapters.
@@ -72,12 +73,13 @@ To download a single manga, you can use the `manga_downloader.py` script.
 Run the script followed by the manga URL you want to download:
 
 ```bash
-python3 manga_downloader.py <manga_url> [--start <start_chapter>] [--end <end_chapter>]
+python3 manga_downloader.py <manga_url> [--start <start_chapter>] [--end <end_chapter>] [--volume]
 ```
 
 - `<manga_url>`: The URL of the manga.
 - `--start <start_chapter>`: The starting chapter number (optional).
 - `--end <end_chapter>`: The ending chapter number (optional).
+- `--volume --v`: Download by volume (optional).
 
 ### Example
 
@@ -108,6 +110,13 @@ To download chapters up to a certain chapter:
 python3 manga_downloader.py https://www.mangaworld.cx/manga/2472/soloist-of-the-prison --end 10
 ```
 In this case, the script will download all chapters starting from the first chapter to the `--end` chapter.
+
+### Download chapters by volume
+
+To download chapters by volume (if available) you can use the `--volume` argument from the command line to enable this functionality and select volume(s) to retrive:
+```bash
+python3 manga_downloader.py https://www.mangaworld.cx/manga/2472/soloist-of-the-prison --volume
+```
 
 ## Batch Download
 
