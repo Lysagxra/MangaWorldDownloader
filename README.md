@@ -8,10 +8,10 @@
 
 - Downloads multiple chapters concurrently.
 - Supports [batch downloading](https://github.com/Lysagxra/MangaWorldDownloader?tab=readme-ov-file#batch-download) via a list of URLs.
-- Supports downloading a [specified range of chapters](https://github.com/Lysagxra/MangaWorldDownloader?tab=readme-ov-file#single-manga-download)
+- Supports downloading a [specified range of chapters](https://github.com/Lysagxra/MangaWorldDownloader?tab=readme-ov-file#single-manga-download).
 - Supports the [generation of PDF files](https://github.com/Lysagxra/MangaWorldDownloader?tab=readme-ov-file#pdf-generation) from the downloaded chapters.
 - Track and display download progress.
-- Organize and format manga chapters efficiently.
+- Organize and format manga chapters.
 
 ## Dependencies
 
@@ -75,7 +75,7 @@ Run the script followed by the manga URL you want to download:
 python3 manga_downloader.py <manga_url> [--start <start_chapter>] [--end <end_chapter>]
 ```
 
-- `<manga_url>`: The URL of the anime series.
+- `<manga_url>`: The URL of the manga.
 - `--start <start_chapter>`: The starting chapter number (optional).
 - `--end <end_chapter>`: The ending chapter number (optional).
 
