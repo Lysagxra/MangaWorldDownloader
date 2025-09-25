@@ -15,6 +15,8 @@ import aiohttp
 from aiohttp import ClientSession
 from bs4 import BeautifulSoup
 
+from .config import COOKIE_REGEX, LINK_REGEX
+
 
 async def check_real_page(
     initial_response: BeautifulSoup,
@@ -29,8 +31,7 @@ async def check_real_page(
         and "document.cookie" in initial_response.body.script.text
     ):
         # Extract the cookie
-        cookie_regex = r'document\.cookie="([^;]+)'
-        match = re.search(cookie_regex, initial_response.body.script.text)
+        match = re.search(COOKIE_REGEX, initial_response.body.script.text)
 
         if match:
             cookie = match.group(1)
@@ -39,8 +40,7 @@ async def check_real_page(
             return initial_response
 
         # Extract the link
-        link_regex = r'location\.href="([^"]+)"'
-        match = re.search(link_regex, initial_response.body.script.text)
+        match = re.search(LINK_REGEX, initial_response.body.script.text)
 
         if match:
             link = match.group(1)  # Extracted link

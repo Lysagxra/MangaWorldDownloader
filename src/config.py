@@ -21,6 +21,8 @@ SESSION_LOG = "session.log"    # The file used to log errors.
 # ============================
 FIRST_PAGE_SUFFIX_REGEX = r"1\.(png|gif|jpg)$"
 MANGA_TYPE_REGEX = r'"typeT":\s*"([^"]*)"'
+COOKIE_REGEX = r'document\.cookie="([^;]+)'
+LINK_REGEX = r'location\.href="([^"]+)"'
 
 # ============================
 # Download Settings
@@ -39,10 +41,14 @@ MANGA_LIKE = {"Manga", "Oneshot", "Doujinshi", "Manhua"}
 # ============================
 # Image Download Settings
 # ============================
-PAGE_EXTENSIONS = [".jpg", ".png", ".gif", ".webp"]  # List of supported image
-                                                     # extensions for download.
-ImageFile.LOAD_TRUNCATED_IMAGES = True               # Allow loading of truncated
-                                                     # images.
+# List of supported image extensions for download.
+PAGE_EXTENSIONS = [".jpg", ".png", ".gif", ".webp"]
+
+# List of supported image extensions for PDF generation.
+IMAGE_FORMATS_FOR_PDF = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
+
+# Allow loading of truncated images.
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 # ============================
 # HTTP / Network

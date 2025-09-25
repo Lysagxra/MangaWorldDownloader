@@ -194,9 +194,10 @@ def extract_manga_type(soup: BeautifulSoup, manga_slug: str) -> str | None:
 
     return None
 
-def extract_volume_info(soup):
-    """
-    Extracts the volume list and relative list of chapter URLs.
+
+def extract_volume_info(soup: BeautifulSoup) -> list[dict]:
+    """Extract the volume list and relative list of chapter URLs.
+
     If a page doesn't contain volumes, it'll retrieve a volume with all chapters.
     Output:
         [
@@ -204,30 +205,43 @@ def extract_volume_info(soup):
             ...
         ]
     """
-    """Fetch the download link for the first image in a chapter page."""
     volumes = []
-    volume_elements = soup.find_all("div", class_="volume-element")
+    volume_elements = soup.find_all("div", {"class": "volume-element"})
+
     if volume_elements:
         for vol in volume_elements:
             # Volume name
-            name_tag = vol.find("p", class_="volume-name")
+            name_tag = vol.find("p", {"class": "volume-name"})
             volume_name = name_tag.get_text(strip=True) if name_tag else "Volume"
+
             # Volume chapters
             chapters = []
-            chapters_container = vol.find("div", class_="volume-chapters")
+            chapters_container = vol.find("div", {"class": "volume-chapters"})
+
             if chapters_container:
-                chapter_divs = chapters_container.find_all("div", class_="chapter")
+                chapter_divs = chapters_container.find_all("div", {"class": "chapter"})
+
                 for chap in chapter_divs:
-                    a_tag = chap.find("a", class_="chap", title=True)
+                    a_tag = chap.find("a", {"class": "chap"}, title=True)
                     if a_tag:
-                        chapters.append({
-                            "title": a_tag["title"],
-                            "url": a_tag["href"]
-                        })
+                        chapters.append(
+                            {
+                                "title": a_tag["title"],
+                                "url": a_tag["href"],
+                            },
+                        )
+
             if chapters:
-                volumes.append({"name": volume_name, "chapters": sorted(chapters, key=lambda c: c['title'])})
+                volumes.append(
+                    {
+                        "name": volume_name,
+                        "chapters": sorted(chapters, key=lambda chap: chap["title"]),
+                    },
+                )
+
     else:
         # No available volumes
         logging.error("The selected link doesn't have available volumes.")
         return None
-    return sorted(volumes, key=lambda v: v['name'])
+
+    return sorted(volumes, key=lambda vol: vol["name"])
