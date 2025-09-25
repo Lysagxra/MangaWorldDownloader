@@ -5,13 +5,13 @@ It processes directories recursively and generates PDFs for each directory's ima
 
 import logging
 import os
-from pathlib import Path
 import re
+from pathlib import Path
 
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 from rich.progress import Progress
 
-from .config import DOWNLOAD_FOLDER
+from .config import DOWNLOAD_FOLDER, IMAGE_FORMATS_FOR_PDF
 
 
 def count_subsubfolders(main_folder: str) -> int:
@@ -34,9 +34,15 @@ def convert2pdf(image_paths: list, output_pdf_path: str) -> None:
     for img_path in image_paths:
         try:
             img = Image.open(img_path)
-            pics.append(img.convert('RGB'))
-        except Exception as e:
-            logging.warning("Could not open image %s: %s", img_path, e)
+            pics.append(img.convert("RGB"))
+
+        except UnidentifiedImageError:
+            log_message = f"Unrecognized image format: {img_path}"
+            logging.warning(log_message)
+
+        except OSError as os_err:
+            log_message = f"OS error when processing {img_path}: {os_err}"
+            logging.warning(log_message)
 
     if pics:
         output_pdf = Path(output_pdf_path)
@@ -47,7 +53,9 @@ def convert2pdf(image_paths: list, output_pdf_path: str) -> None:
             save_all=True,
             append_images=pics[1:],
         )
-        logging.info(f"PDF created: {output_pdf}")
+        log_message = f"PDF created: {output_pdf}"
+        logging.info(log_message)
+
     else:
         logging.error("No valid images to convert.")
 
@@ -56,21 +64,22 @@ def get_num_folders(current_directory: str) -> int:
     """Count the number of directories in the specified directory."""
     return sum(1 for entry in os.scandir(current_directory) if entry.is_dir())
 
-def extract_number(s):
-    """Extract the number of the images by path name and file name"""
-    nums = re.findall(r'\d+', s)
+def extract_number(file_path: str) -> tuple:
+    """Extract the number of the images by path name and file name."""
+    nums = re.findall(r"\d+", file_path)
     return tuple(int(n) for n in nums) if nums else (0,)
 
-def collect_image_paths(
-        folder: str,
-        ):
-    """collect all image paths from a folder"""
-    image_paths = []
-    for dirpath, _, filenames in os.walk(folder):
-        for filename in filenames:
-            if filename.lower().endswith((".jpg", ".jpeg", ".png", ".webp", ".gif")):
-                image_paths.append(Path(dirpath) / filename)
-    image_paths.sort(key=lambda p: (extract_number(str(p.parent)), extract_number(p.name)))
+def collect_image_paths(folder: str) -> list[str]:
+    """Collect all image paths from a folder."""
+    # Use rglob to recursively search for all images with valid extensions
+    image_paths = [
+        file for file in Path(folder).rglob("*")
+        if file.suffix.lower() in IMAGE_FORMATS_FOR_PDF
+    ]
+
+    image_paths.sort(
+        key=lambda path: (extract_number(str(path.parent)), extract_number(path.name)),
+    )
     return image_paths
 
 def generate_pdf_files(
@@ -78,7 +87,7 @@ def generate_pdf_files(
     job_progress: Progress,
     *,
     is_module: bool = False,
-    single_pdf = False
+    single_pdf: bool = False,
 ) -> None:
     """Generate PDF files from images in each subfolder of the parent folder."""
     num_folders = (
@@ -90,22 +99,27 @@ def generate_pdf_files(
 
     if single_pdf:
         image_paths = collect_image_paths(parent_folder)
+
         if image_paths:
             pdf_name = Path(parent_folder).name
             pdf_path = Path(parent_folder).parent
             output_pdf = Path.cwd() / pdf_path / f"{pdf_name}.pdf"
             convert2pdf(image_paths, str(output_pdf))
+
         job_progress.advance(task, num_folders)
+
     else:
         for path, _, _ in os.walk(parent_folder):
             manga_name = Path(path).parent.name
             if manga_name != DOWNLOAD_FOLDER:
                 image_paths = collect_image_paths(path)
+
                 if image_paths:
                     pdf_name = Path(path).name
                     pdf_path = Path(path).parent
                     output_pdf = Path.cwd() / pdf_path / f"{pdf_name}.pdf"
                     convert2pdf(image_paths, str(output_pdf))
+
                 job_progress.advance(task)
 
 
