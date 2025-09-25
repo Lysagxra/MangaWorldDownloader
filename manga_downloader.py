@@ -84,7 +84,10 @@ async def process_manga_download(
                     f"{manga_name}/{volume['name']}"
                 )
                 if generate_pdf:
-                    process_pdf_generation(f"{manga_name}/{volume['name']}", job_progress, single_pdf=True)
+                    process_pdf_generation(
+                        f"{manga_name}/{volume['name']}",
+                        job_progress,
+                        single_pdf=True)
     else:
         chapter_urls, pages_per_chapter = await extract_chapters_info(soup)
         start_index, end_index = validate_chapter_range(

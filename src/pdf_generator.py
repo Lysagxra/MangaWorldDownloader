@@ -36,7 +36,7 @@ def convert2pdf(image_paths: list, output_pdf_path: str) -> None:
             img = Image.open(img_path)
             pics.append(img.convert('RGB'))
         except Exception as e:
-            logging.warning(f"Could not open image {img_path}: {e}")
+            logging.warning("Could not open image %s: %s", img_path, e)
 
     if pics:
         output_pdf = Path(output_pdf_path)

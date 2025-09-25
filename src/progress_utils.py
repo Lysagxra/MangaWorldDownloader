@@ -1,3 +1,9 @@
+"""Utility functions for tracking download progress using the Rich library.
+
+It includes features for creating a progress bar and a formatted progress table
+specifically designed for monitoring the download status of the current taks.
+"""
+
 from rich.console import Console
 from rich.prompt import Prompt
 
@@ -10,12 +16,6 @@ from rich.progress import (
     TimeRemainingColumn,
 )
 from rich.table import Table
-
-"""Utility functions for tracking download progress using the Rich library.
-
-It includes features for creating a progress bar and a formatted progress table
-specifically designed for monitoring the download status of the current taks.
-"""
 
 def create_progress_bar() -> Progress:
     """Create a progress bar for tracking download progress."""
@@ -42,7 +42,10 @@ def create_progress_table(title: str, job_progress: Progress) -> Table:
     )
     return progress_table
 
-def create_select_items_list(items: list[str], title: str = "Please select volume(s) to download") -> list[int]:
+def create_select_items_list(
+        items: list[str],
+        title: str = "Please select volume(s) to download"
+        ) -> list[int]:
     """
     Shows a numbered list of items with Rich and allows the user to select one or more indices.
     Returns the list of selected indices (0-based).
@@ -59,6 +62,6 @@ def create_select_items_list(items: list[str], title: str = "Please select volum
         indices = [int(x.strip())-1 for x in choice.split(',') if x.strip().isdigit()]
         indices = [i for i in indices if 0 <= i < len(items)]
         return indices
-    except Exception:
+    except (ValueError, IndexError):
         console.print("[red]Invalid selection.[/red]")
         return []

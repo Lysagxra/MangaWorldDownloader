@@ -203,8 +203,8 @@ def extract_volume_info(soup):
             {"name": "Volume 1", "chapters": [{"title": ..., "url": ...}, ...]},
             ...
         ]
+
     """
-    """Fetch the download link for the first image in a chapter page."""
     volumes = []
     volume_elements = soup.find_all("div", class_="volume-element")
     if volume_elements:
@@ -225,7 +225,13 @@ def extract_volume_info(soup):
                             "url": a_tag["href"]
                         })
             if chapters:
-                volumes.append({"name": volume_name, "chapters": sorted(chapters, key=lambda c: c['title'])})
+                volumes.append({
+                    "name":
+                        volume_name,
+                    "chapters":
+                        sorted(chapters,
+                               key=lambda c: c['title'])})
+                
     else:
         # No available volumes
         logging.error("The selected link doesn't have available volumes.")
