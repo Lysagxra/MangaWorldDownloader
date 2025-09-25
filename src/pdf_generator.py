@@ -8,7 +8,7 @@ import os
 import re
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 from rich.progress import Progress
 
 from .config import DOWNLOAD_FOLDER, IMAGE_FORMATS_FOR_PDF
@@ -36,8 +36,12 @@ def convert2pdf(image_paths: list, output_pdf_path: str) -> None:
             img = Image.open(img_path)
             pics.append(img.convert("RGB"))
 
-        except Exception as e:
-            log_message = f"Could not open image {img_path}: {e}"
+        except UnidentifiedImageError:
+            log_message = f"Unrecognized image format: {img_path}"
+            logging.warning(log_message)
+
+        except OSError as os_err:
+            log_message = f"OS error when processing {img_path}: {os_err}"
             logging.warning(log_message)
 
     if pics:

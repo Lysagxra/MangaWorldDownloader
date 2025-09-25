@@ -44,28 +44,27 @@ def create_progress_table(title: str, job_progress: Progress) -> Table:
 
 
 def create_select_items_list(items: list[str]) -> list[int]:
-    """Show a numbered list of items and allows the user to select one or more indexes.
+    """Show a numbered list of items and allow the user to select one or more indexes.
 
-    Return the list of selected indexes (0-based).
+    Return the list of selected 0-based indexes
     """
     console = Console()
     console.print("[bold]Please select volume(s) to download[/bold]")
 
-    for indx, _ in enumerate(items):
-        console.print(f"[cyan][{indx + 1}][/cyan]")
+    for indx, item in enumerate(items):
+        console.print(f"[cyan][{indx + 1}][/cyan] {item}")
 
-    prompt_text = "Enter the numbers separated by comma (e.g. 1,3,5) or 'all' for all:"
+    prompt_text = "Enter the numbers separated by commas (e.g. 1,3,5) or 'all' for all:"
     choice = Prompt.ask(f"\n{prompt_text}", default="all")
 
     if choice.strip().lower() == "all":
         return list(range(len(items)))
 
-    try:
-        indexes = [int(x.strip()) - 1 for x in choice.split(",") if x.strip().isdigit()]
-        indexes = [indx for indx in indexes if 0 <= indx < len(items)]
+    # Parse user input safely without raising exceptions
+    raw_indexes = [int(x.strip()) - 1 for x in choice.split(",") if x.strip().isdigit()]
+    valid_indexes = [indx for indx in raw_indexes if 0 <= indx < len(items)]
 
-    except Exception:
-        console.print("[red]Invalid selection.[/red]")
-        return []
+    if not valid_indexes:
+        console.print("[red]No valid selections made.[/red]")
 
-    return indexes
+    return valid_indexes

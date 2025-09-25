@@ -32,11 +32,15 @@ from src.progress_utils import (
 )
 
 if TYPE_CHECKING:
+    from bs4 import BeautifulSoup
     from rich.progress import Progress
 
 
 def process_pdf_generation(
-    manga_name: str, job_progress: Progress, *, single_pdf: bool = False,
+    manga_name: str,
+    job_progress: Progress,
+    *,
+    single_pdf: bool = False,
 ) -> None:
     """Process the generation of PDF files for a specific manga."""
     manga_parent_folder = Path(DOWNLOAD_FOLDER) / manga_name
@@ -76,6 +80,46 @@ def download_chapter_with_progress(
             process_pdf_generation(working_path, job_progress, single_pdf=single_pdf)
 
 
+async def process_volumes_download(
+    soup: BeautifulSoup,
+    manga_name: str,
+    manga_type: str,
+    *,
+    generate_pdf: bool = False,
+) -> None:
+    """Process selected manga volumes and downloads their chapters."""
+    volumes = extract_volume_info(soup)
+    volume_names = [volume["name"] for volume in volumes]
+    selected_indexes = create_select_items_list(volume_names)
+
+    for indx in selected_indexes:
+        volume = volumes[indx]
+        chapter_urls = [chapter["url"] for chapter in volume["chapters"]]
+        pages_per_chapter = []
+
+        async with aiohttp.ClientSession() as session:
+            tasks = [
+                fetch_chapter_data(chapter_url, session) for chapter_url in chapter_urls
+            ]
+            results = await asyncio.gather(*tasks)
+            pages_per_chapter = [
+                result[1] if result and result[1] else None for result in results
+            ]
+            download_links = await extract_download_links(
+                chapter_urls,
+                0,
+                len(chapter_urls),
+                manga_type,
+            )
+            download_chapter_with_progress(
+                manga_name,
+                download_links,
+                pages_per_chapter,
+                generate_pdf=generate_pdf,
+                volume_name=volume["name"],
+            )
+
+
 async def process_manga_download(
     url: str,
     start_chapter: int | None = None,
@@ -90,35 +134,12 @@ async def process_manga_download(
     manga_type = extract_manga_type(soup, manga_slug)
 
     if volume_mode:
-        volumes = extract_volume_info(soup)
-        volume_names = [volume["name"] for volume in volumes]
-        selected_indexes = create_select_items_list(volume_names)
-
-        for indx in selected_indexes:
-            volume = volumes[indx]
-            chapter_urls = [chapter["url"] for chapter in volume["chapters"]]
-            pages_per_chapter = []
-
-            async with aiohttp.ClientSession() as session:
-                tasks = [fetch_chapter_data(url, session) for url in chapter_urls]
-                results = await asyncio.gather(*tasks)
-                pages_per_chapter = [
-                    result[1] if result and result[1] else None for result in results
-                ]
-
-            download_links = await extract_download_links(
-                chapter_urls,
-                0,
-                len(chapter_urls),
-                manga_type,
-            )
-            download_chapter_with_progress(
-                manga_name,
-                download_links,
-                pages_per_chapter,
-                generate_pdf=generate_pdf,
-                volume_name=volume["name"],
-            )
+        process_volumes_download(
+            soup,
+            manga_name,
+            manga_type,
+            generate_pdf=generate_pdf,
+        )
 
     else:
         chapter_urls, pages_per_chapter = await extract_chapters_info(soup)
