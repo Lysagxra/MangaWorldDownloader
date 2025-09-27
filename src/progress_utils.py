@@ -43,7 +43,7 @@ def create_progress_table(title: str, job_progress: Progress) -> Table:
     return progress_table
 
 
-def create_select_items_list(items: list[str]) -> list[int]:
+def create_select_items_list(items: list[str], display_limit: int = 15) -> list[int]:
     """Show a numbered list of items and allow the user to select one or more indexes.
 
     Return the list of selected 0-based indexes
@@ -52,14 +52,17 @@ def create_select_items_list(items: list[str]) -> list[int]:
         return the list in a compact format like this:
         [1] Volume 01
         ...
-        [15] Volume 05
+        [15] Volume 15
     """
     console = Console()
     console.print("[bold]Please select volume(s) to download[/bold]")
 
-    # compact list format
-    if len(items) > 15:
-        console.print(f"[cyan][1][/cyan] {items[0]}\n...\n[cyan][{len(items)}][/cyan] {items[-1]}")
+    # Compact list format
+    if len(items) > display_limit:
+        console.print(
+            f"[cyan][1][/cyan] {items[0]}\n...\n"
+            f"[cyan][{len(items)}][/cyan] {items[-1]}",
+        )
     else:
         for indx, item in enumerate(items):
             console.print(f"[cyan][{indx + 1}][/cyan] {item}")

@@ -82,12 +82,12 @@ def download_chapter_with_progress(
 
 async def process_volume(
     volume: dict,
-    manga_name: str,
-    manga_type: str,
+    manga_info: tuple[str, str],
     *,
     generate_pdf: bool = False,
 ) -> None:
     """Process and downloads a single volume."""
+    manga_name, manga_type = manga_info
     chapter_urls = [chapter["url"] for chapter in volume["chapters"]]
 
     async with aiohttp.ClientSession() as session:
@@ -99,7 +99,7 @@ async def process_volume(
     ]
 
     download_links = await extract_download_links(
-        chapter_urls, 0, len(chapter_urls), manga_type
+        chapter_urls, 0, len(chapter_urls), manga_type,
     )
 
     download_chapter_with_progress(
@@ -112,8 +112,7 @@ async def process_volume(
 
 async def process_volumes_download(
     soup: BeautifulSoup,
-    manga_name: str,
-    manga_type: str,
+    manga_info: tuple[str, str],
     start_index: int | None = None,
     end_index: int | None = None,
     *,
@@ -128,20 +127,20 @@ async def process_volumes_download(
         start_volume, end_volume = validate_index_range(
             start_index,
             end_index,
-            length=len(volumes)
+            length=len(volumes),
         )
         selected_volumes = volumes[start_volume:end_volume]
+
     else:
         selected_indexes = create_select_items_list(volume_names)
-        selected_volumes = [volumes[i] for i in selected_indexes]
+        selected_volumes = [volumes[indx] for indx in selected_indexes]
 
     # Download selected volumes
     for volume in selected_volumes:
         await process_volume(
             volume,
-            manga_name,
-            manga_type,
-            generate_pdf=generate_pdf
+            manga_info,
+            generate_pdf=generate_pdf,
         )
 
 async def process_manga_download(
@@ -160,8 +159,7 @@ async def process_manga_download(
     if volume_mode:
         await process_volumes_download(
             soup,
-            manga_name,
-            manga_type,
+            (manga_name, manga_type),
             start_index,
             end_index,
             generate_pdf=generate_pdf,

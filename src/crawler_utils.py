@@ -194,10 +194,12 @@ def extract_manga_type(soup: BeautifulSoup, manga_slug: str) -> str | None:
 
     return None
 
+
 def extract_volume_number(name: str) -> int:
-    """Extract volume number by title"""
+    """Extract volume number by title."""
     match = re.search(r"\d+", name)
     return int(match.group()) if match else 0
+
 
 def extract_volume_info(soup: BeautifulSoup) -> list[dict]:
     """Extract the volume list and relative list of chapter URLs.
@@ -242,11 +244,11 @@ def extract_volume_info(soup: BeautifulSoup) -> list[dict]:
                         "chapters": sorted(chapters, key=lambda chap: chap["title"]),
                     },
                 )
-
     else:
         # No available volumes
         logging.error("The selected link doesn't have available volumes.")
         return []
+
     # Return sorted volumes by number
     volumes.sort(key=lambda v: extract_volume_number(v["name"]))
     return volumes
