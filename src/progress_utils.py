@@ -47,12 +47,22 @@ def create_select_items_list(items: list[str]) -> list[int]:
     """Show a numbered list of items and allow the user to select one or more indexes.
 
     Return the list of selected 0-based indexes
+
+    If there are more than 15 volumes,
+        return the list in a compact format like this:
+        [1] Volume 01
+        ...
+        [15] Volume 05
     """
     console = Console()
     console.print("[bold]Please select volume(s) to download[/bold]")
 
-    for indx, item in enumerate(items):
-        console.print(f"[cyan][{indx + 1}][/cyan] {item}")
+    # compact list format
+    if len(items) > 15:
+        console.print(f"[cyan][1][/cyan] {items[0]}\n...\n[cyan][{len(items)}][/cyan] {items[-1]}")
+    else:
+        for indx, item in enumerate(items):
+            console.print(f"[cyan][{indx + 1}][/cyan] {item}")
 
     prompt_text = "Enter the numbers separated by commas (e.g. 1,3,5) or 'all' for all:"
     choice = Prompt.ask(f"\n{prompt_text}", default="all")

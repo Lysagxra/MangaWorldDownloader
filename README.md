@@ -73,13 +73,13 @@ To download a single manga, you can use the `manga_downloader.py` script.
 Run the script followed by the manga URL you want to download:
 
 ```bash
-python3 manga_downloader.py <manga_url> [--start <start_chapter>] [--end <end_chapter>] [--volume]
+python3 manga_downloader.py <manga_url> [--start <start_index>] [--end <end_index>] [--volume]
 ```
 
 - `<manga_url>`: The URL of the manga.
-- `--start <start_chapter>`: The starting chapter number (optional).
-- `--end <end_chapter>`: The ending chapter number (optional).
-- `--volume --v`: Download by volume (optional).
+- `--start <start_index>`: The starting chapter (or volume) number (optional).
+- `--end <end_index>`: The ending chapter (or volume) number (optional).
+- `--volume --v`: Enable download by volume (optional).
 
 ### Example
 
@@ -117,6 +117,23 @@ To download chapters by volume (if available) you can use the `--volume` argumen
 ```bash
 python3 manga_downloader.py https://www.mangaworld.cx/manga/2472/soloist-of-the-prison --volume
 ```
+
+To download a specific range of volumes (e.g., volumes 5 to 10):
+```bash
+python3 manga_downloader.py https://www.mangaworld.cx/manga/2472/soloist-of-the-prison --volume --start 5 --end 10
+```
+
+To download chapters starting from a specific volume:
+```bash
+python3 manga_downloader.py https://www.mangaworld.cx/manga/2472/soloist-of-the-prison --volume --start 5
+```
+In this case, the script will download all volumes starting from the `--start` volume to the last volume.
+
+To download chapters up to a certain volume:
+```bash
+python3 manga_downloader.py https://www.mangaworld.cx/manga/2472/soloist-of-the-prison --volume --end 10
+```
+In this case, the script will download all volumes starting from the first volume to the `--end` volume.
 
 ## Batch Download
 
