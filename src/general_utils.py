@@ -75,28 +75,28 @@ async def fetch_page(url: str, timeout: int = 10) -> BeautifulSoup:
             sys.exit(1)
 
 
-def validate_chapter_range(
-    start_chapter: int, end_chapter: int, num_chapters: int,
+def validate_index_range(
+    start_index: int, end_index: int, length: int,
 ) -> tuple:
-    """Validate the chapter range provided by the user."""
+    """Validate the index range provided by the user."""
 
     def log_and_exit(message: str) -> None:
         logging.warning(message)
         sys.exit(1)
 
-    if start_chapter:
-        if start_chapter < 1 or start_chapter > num_chapters:
-            log_and_exit(f"Start chapter must be between 1 and {num_chapters}.")
+    if start_index:
+        if start_index < 1 or start_index > length:
+            log_and_exit(f"Start index must be between 1 and {length}.")
 
-    if start_chapter and end_chapter:
-        if start_chapter > end_chapter:
-            log_and_exit("Start chapter cannot be greater than end episode.")
+    if start_index and end_index:
+        if start_index > end_index:
+            log_and_exit("Start index cannot be greater than end episode.")
 
-        if start_chapter > num_chapters:
-            log_and_exit(f"End chapter must be between 1 and {num_chapters}.")
+        if start_index > length:
+            log_and_exit(f"End index must be between 1 and {length}.")
 
-    start_index = start_chapter - 1 if start_chapter else 0
-    end_index = end_chapter if end_chapter else num_chapters
+    start_index = start_index - 1 if start_index else 0
+    end_index = end_index if end_index else length
     return start_index, end_index
 
 
