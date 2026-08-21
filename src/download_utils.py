@@ -114,8 +114,7 @@ def attempt_download_page(
                 return True
 
         except requests.exceptions.RequestException as req_err:
-            log_message = f"Failed attempt with {test_download_link}: {req_err}"
-            logging.warning(log_message)
+            logging.warning("Failed attempt with %s: %s", test_download_link, req_err)
             continue
 
     # Every possible extension failed
@@ -138,8 +137,11 @@ def download_chapter(
     for page in range(1, num_pages + 1):
         success = attempt_download_page(page, base_download_link, download_path)
         if not success:
-            log_message = f"Page {page} could not be downloaded with any extension."
-            logging.error(log_message)
+            logging.error(
+                "Chapter %d: Page %d of could not be downloaded with any extension",
+                indx_chapter + 1,
+                page,
+            )
 
         progress_percentage = (page / num_pages) * 100
         job_progress.update(task, completed=progress_percentage)

@@ -110,8 +110,7 @@ def generate_chapter_url(chapter_url: str, manga_type: str) -> str | None:
     if manga_type == "Manhwa":
         return chapter_url.replace("?style=list", "/1?style=pages")
 
-    log_message = f"Manga type '{manga_type}' is not supported."
-    logging.warning(log_message)
+    logging.warning("Manga type '%s' is not supported", manga_type)
     return None
 
 
@@ -146,8 +145,7 @@ async def fetch_download_link(
             delay = 1 + random.uniform(0, WAIT_TIME_RETRIES)  # noqa: S311
             await asyncio.sleep(delay)
 
-    message = f"Failed to fetch download link for {chapter_url}."
-    logging.error(message)
+    logging.error("Failed to fetch download link for %s", chapter_url)
     return None
 
 

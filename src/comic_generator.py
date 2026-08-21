@@ -29,7 +29,7 @@ def count_subsubfolders(main_folder: str) -> int:
 def convert2cbz(image_paths: list[Path], output_cbz_path: str) -> None:
     """Convert a list of image paths into a CBZ archive."""
     if not image_paths:
-        logging.error("No images provided to convert.")
+        logging.warning("No images provided to convert into CBZ")
         return
 
     output_cbz = Path(output_cbz_path)
@@ -51,7 +51,7 @@ def convert2cbz(image_paths: list[Path], output_cbz_path: str) -> None:
 def convert2pdf(image_paths: list, output_pdf_path: str) -> None:
     """Convert a list of image paths into a PDF file."""
     if not image_paths:
-        logging.error("No images provided to convert.")
+        logging.warning("No images provided to convert into PDF")
         return
 
     pics = []
@@ -61,12 +61,10 @@ def convert2pdf(image_paths: list, output_pdf_path: str) -> None:
             pics.append(img.convert("RGB"))
 
         except UnidentifiedImageError:
-            log_message = f"Unrecognized image format: {img_path}"
-            logging.warning(log_message)
+            logging.warning("Unrecognized image format: %s", img_path)
 
         except OSError as os_err:
-            log_message = f"OS error when processing {img_path}: {os_err}"
-            logging.warning(log_message)
+            logging.warning("OS error when processing %s: %s", img_path, os_err)
 
     if pics:
         output_pdf = Path(output_pdf_path)
@@ -77,8 +75,7 @@ def convert2pdf(image_paths: list, output_pdf_path: str) -> None:
             save_all=True,
             append_images=pics[1:],
         )
-        log_message = f"PDF created: {output_pdf}"
-        logging.info(log_message)
+        logging.info("PDF created: %s", output_pdf)
 
     else:
         logging.error("No valid images to convert.")
