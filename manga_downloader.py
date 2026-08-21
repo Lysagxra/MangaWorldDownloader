@@ -106,7 +106,6 @@ async def process_volume(
     pages_per_chapter = [
         result[1] if result and result[1] else None for result in results
     ]
-
     download_links = await extract_download_links(
         chapter_urls,
         0,

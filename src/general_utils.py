@@ -9,13 +9,14 @@ import asyncio
 import logging
 import os
 import re
+import subprocess
 import sys
 
 import aiohttp
 from aiohttp import ClientSession
 from bs4 import BeautifulSoup
 
-from .config import COOKIE_REGEX, LINK_REGEX
+from .config import COOKIE_REGEX, FETCH_HEADERS, LINK_REGEX
 
 
 async def check_real_page(
@@ -24,7 +25,6 @@ async def check_real_page(
     timeout: int = 10,
 ) -> BeautifulSoup:
     """Check if the provided response contains a redirect to a real page."""
-    parsed_response = initial_response
     if (
         initial_response.body
         and initial_response.body.script
@@ -54,30 +54,30 @@ async def check_real_page(
             cookies={cookie[0]: cookie[1]},
         ) as response:
             response.raise_for_status()
-            parsed_response = BeautifulSoup(await response.text(), "html.parser")
+            return BeautifulSoup(await response.text(), "html.parser")
 
-    return parsed_response
+    return initial_response
 
 
 async def fetch_page(url: str, timeout: int = 10) -> BeautifulSoup:
     """Fetch the HTML content of a webpage."""
     # Create a new session per worker
-    async with aiohttp.ClientSession() as session:
+    async with aiohttp.ClientSession(headers=FETCH_HEADERS) as session:
         try:
             async with session.get(url, timeout=timeout) as response:
-                parsed_response = BeautifulSoup(await response.text(), "html.parser")
+                html = await response.text()
+                parsed_response = BeautifulSoup(html, "html.parser")
 
             return await check_real_page(parsed_response, session, timeout)
 
-        except (aiohttp.ClientError, asyncio.TimeoutError) as req_err:
-            message = f"Error fetching page {url}: {req_err}"
-            logging.exception(message)
+        except (aiohttp.ClientError, asyncio.TimeoutError):
+            logging.exception("Error fetching page %s", url)
             sys.exit(1)
 
 
 def validate_index_range(
     start_index: int, end_index: int, length: int,
-) -> tuple:
+) -> tuple[int, int]:
     """Validate the index range provided by the user."""
 
     def log_and_exit(message: str) -> None:
@@ -103,10 +103,10 @@ def validate_index_range(
 def clear_terminal() -> None:
     """Clear the terminal screen based on the operating system."""
     commands = {
-        "nt": "cls",       # Windows
+        "nt": "cls",  # Windows
         "posix": "clear",  # macOS and Linux
     }
 
     command = commands.get(os.name)
     if command:
-        os.system(command)  # noqa: S605
+        subprocess.run([command], check=True)  # noqa: S603

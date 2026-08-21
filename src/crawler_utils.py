@@ -1,11 +1,11 @@
 """Asynchronous utility functions for crawling manga chapters and extracting metadata.
 
 This module provides high-level helpers to:
-- Retrieve chapter URLs and the corresponding number of pages.
-- Normalize chapter URLs depending on manga type (e.g., Manga, Manhwa).
-- Extract the manga type from embedded script data.
-- Fetch download links for individual chapter pages.
-- Collect cleaned download links for multiple chapters.
+    - Retrieve chapter URLs and the corresponding number of pages.
+    - Normalize chapter URLs depending on manga type (e.g., Manga, Manhwa).
+    - Extract the manga type from embedded script data.
+    - Fetch download links for individual chapter pages.
+    - Collect cleaned download links for multiple chapters.
 
 Intended to be used in combination with download utilities to provide a complete
 pipeline for scraping and downloading manga content.
@@ -23,6 +23,7 @@ from aiohttp import ClientSession
 from bs4 import BeautifulSoup
 
 from .config import (
+    FETCH_HEADERS,
     FIRST_PAGE_SUFFIX_REGEX,
     MANGA_LIKE,
     MANGA_TYPE_REGEX,
@@ -35,6 +36,7 @@ from .general_utils import check_real_page
 
 async def fetch_chapter_data(chapter_url: str, session: ClientSession) -> tuple:
     """Fetch the number of pages for a given chapter URL, retrying if necessary."""
+    session.headers.update(FETCH_HEADERS)
     for attempt in range(MAX_RETRIES):
         try:
             async with session.get(chapter_url, timeout=TIMEOUT) as response:
@@ -55,8 +57,7 @@ async def fetch_chapter_data(chapter_url: str, session: ClientSession) -> tuple:
             delay = random.uniform(1, WAIT_TIME_RETRIES - 1)  # noqa: S311
             await asyncio.sleep(delay)
 
-    message = f"Failed to fetch chapter data for {chapter_url}."
-    logging.error(message)
+    logging.error("Failed to fetch chapter data for %s", chapter_url)
     return None, None
 
 
@@ -157,7 +158,7 @@ async def extract_download_links(
     manga_type: str,
 ) -> list[str]:
     """Extract the download links for a list of chapter URLs."""
-    async with aiohttp.ClientSession() as session:
+    async with aiohttp.ClientSession(headers=FETCH_HEADERS) as session:
         tasks = [
             fetch_download_link(chapter_url, session, manga_type=manga_type)
             for chapter_url in chapter_urls
