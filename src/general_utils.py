@@ -9,7 +9,6 @@ import asyncio
 import logging
 import os
 import re
-import subprocess
 import sys
 
 import aiohttp
@@ -103,10 +102,10 @@ def validate_index_range(
 def clear_terminal() -> None:
     """Clear the terminal screen based on the operating system."""
     commands = {
-        "nt": "cls",  # Windows
+        "nt": "cls",       # Windows
         "posix": "clear",  # macOS and Linux
     }
 
     command = commands.get(os.name)
     if command:
-        subprocess.run([command], check=True)  # noqa: S603
+        subprocess.run(command, shell=True, check=True)  # noqa: S603
